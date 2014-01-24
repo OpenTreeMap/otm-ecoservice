@@ -86,10 +86,12 @@ func (t *TestingContext) GetRegionForInstance(instance int) (string, error) {
 	return t.singleRegion, nil
 }
 
-func (t *TestingContext) RowsForTreesWithRegion(instance int) (Fetchable, error) {
+func (t *TestingContext) RowsForTreesWithRegion(
+	where string, params ...string) (Fetchable, error) {
 	return Fetchable(t), nil
 }
 
-func (t *TestingContext) RowsForTreesWithoutRegion(instance int) (Fetchable, error) {
+func (t *TestingContext) RowsForTreesWithoutRegion(
+	where string, params ...string) (Fetchable, error) {
 	return Fetchable(t), nil
 }

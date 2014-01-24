@@ -207,7 +207,7 @@ func benchmarkTreesMultiRegion(regions []string, targetLength int, b *testing.B)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testingContext.Reset()
-		data, err := CalcBenefits(testingContext, 0, speciesdata, l)
+		data, err := CalcBenefits(testingContext, speciesdata, l, 0, "")
 
 		if err != nil {
 			b.Fatalf("error: %v", err)

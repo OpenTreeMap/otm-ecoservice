@@ -106,24 +106,40 @@ func (dbc *DBContext) GetRegionForInstance(instance int) (string, error) {
 	return "", nil
 }
 
-func (dbc *DBContext) RowsForTreesWithoutRegion(instance int) (Fetchable, error) {
+func convertInterface(params []string) []interface{} {
+	paramsi := make([]interface{}, len(params))
+
+	for i, v := range params {
+		paramsi[i] = interface{}(v)
+	}
+
+	return paramsi
+}
+
+func (dbc *DBContext) RowsForTreesWithoutRegion(
+	where string, params ...string) (Fetchable, error) {
 	db := (*sql.DB)(dbc)
-	rows, err := db.Query(
+
+	query := fmt.Sprintf(
 		`select diameter, treemap_species.otm_code
                     from treemap_species, treemap_tree
                     where
+                       %v and
                        treemap_species.id = treemap_tree.species_id and
-                       diameter is not null and
-                       treemap_tree.instance_id = $1`,
-		instance)
+                       diameter is not null`, where)
+
+	paramsi := convertInterface(params)
+
+	rows, err := db.Query(query, paramsi...)
 
 	return (*DBRow)(rows), err
 }
 
-func (dbc *DBContext) RowsForTreesWithRegion(instance int) (Fetchable, error) {
+func (dbc *DBContext) RowsForTreesWithRegion(
+	where string, params ...string) (Fetchable, error) {
 	db := (*sql.DB)(dbc)
 
-	rows, err := db.Query(
+	query := fmt.Sprintf(
 		`select
                     diameter, treemap_species.otm_code,
                     treemap_itreeregion.code
@@ -136,13 +152,18 @@ func (dbc *DBContext) RowsForTreesWithRegion(instance int) (Fetchable, error) {
                           treemap_itreeregion.geometry,
                           treemap_mapfeature.the_geom_webmercator)
                  where
+                    %v and
                     treemap_mapfeature.id = treemap_tree.plot_id and
                     treemap_species.id = treemap_tree.species_id and
                     treemap_itreeregion.code is not null and
                     diameter is not null and
                     otm_code is not null and
                     treemap_tree.instance_id = $1
-                 `, instance)
+                 `, where)
+
+	paramsi := convertInterface(params)
+
+	rows, err := db.Query(query, paramsi...)
 
 	return (*DBRow)(rows), err
 }

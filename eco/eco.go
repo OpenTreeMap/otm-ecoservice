@@ -16,12 +16,12 @@ type DataBackend interface {
 
 	// Get a fetchable for all trees with a diameter and species in
 	// a given instance - the region data will not be fetched
-	RowsForTreesWithoutRegion(int) (Fetchable, error)
+	RowsForTreesWithoutRegion(string, ...string) (Fetchable, error)
 
 	// Get a fetchable for all trees with a diameter and species in
 	// a given instance - including the spatial join over the
 	// regions table
-	RowsForTreesWithRegion(int) (Fetchable, error)
+	RowsForTreesWithRegion(string, ...string) (Fetchable, error)
 }
 
 // Fetchables come out of the database backend and essentially
@@ -60,9 +60,11 @@ type Fetchable interface {
 //
 func CalcBenefits(
 	db DataBackend,
-	instanceid int,
 	speciesdata map[string]map[string]string,
-	regiondata map[string][]*Datafile) (map[string]float64, error) {
+	regiondata map[string][]*Datafile,
+	instanceid int,
+	where string,
+	params ...string) (map[string]float64, error) {
 
 	// Using a fixed region lets us avoid costly
 	// hash lookups. While we don't yet cache this value, we should
@@ -78,16 +80,17 @@ func CalcBenefits(
 	var rows Fetchable
 
 	if useFixedRegion {
-		rows, err = db.RowsForTreesWithoutRegion(instanceid)
+		rows, err = db.RowsForTreesWithoutRegion(where, params...)
 	} else {
-		rows, err = db.RowsForTreesWithRegion(instanceid)
+		rows, err = db.RowsForTreesWithRegion(where, params...)
+	}
+
+	if err != nil {
+		panic(err)
+		return nil, err
 	}
 
 	defer rows.Close()
-
-	if err != nil {
-		return nil, err
-	}
 
 	factorsum := make([]float64, len(Factors))
 	ntrees := 0
