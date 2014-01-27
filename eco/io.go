@@ -15,7 +15,7 @@ var (
 	// output__{region}__{factor}.csv
 	Factors = []string{"natural_gas", "electricity",
 		"hydro_interception", "co2_sequestered",
-		"co2_avoided", "co2_storage", "aq_nox_dep",
+		"co2_avoided", "co2_storage", "aq_nox_dep", "aq_ozone_dep",
 		"aq_nox_avoided", "aq_pm10_dep", "aq_pm10_avoided",
 		"aq_sox_dep", "aq_sox_avoided", "aq_voc_avoided", "bvoc"}
 )

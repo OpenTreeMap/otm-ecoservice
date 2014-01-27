@@ -158,15 +158,23 @@ func main() {
 			return nil, err
 		}
 
-		// Each instance can override itree codes
-		// ITreeCodeOverride
-		// TODO... bummer...
+		where, err := getSingleValue(in, "where")
+
+		if err != nil {
+			return nil, err
+		}
+
+		keys, ok := in["param"]
+
+		if !ok {
+			return nil, err
+		}
 
 		now := time.Now()
 
 		// Contains the running total of the various factors
 		factorsums, err :=
-			eco.CalcBenefits(db, instanceid, speciesdata, regiondata)
+			eco.CalcBenefits(db, speciesdata, regiondata, instanceid, where, keys...)
 
 		s := time.Since(now)
 		fmt.Println(int64(s/time.Millisecond), "ms")
