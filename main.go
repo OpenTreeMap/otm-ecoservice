@@ -72,7 +72,7 @@ func main() {
 	stopServerChan := make(chan bool)
 
 	var cfg config
-	err := gcfg.ReadFileInto(&cfg, *configpath+"config.gcfg")
+	err := gcfg.ReadFileInto(&cfg, *configpath)
 
 	if err != nil {
 		panic(err)
