@@ -24,10 +24,14 @@ import (
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+var configpath = flag.String("configpath", "./", "path to the configuration")
 
 type config struct {
 	Database eco.DBInfo
-	Server   struct {
+	Data     struct {
+		Path string
+	}
+	Server struct {
 		Host string
 		Port string
 	}
@@ -68,14 +72,14 @@ func main() {
 	stopServerChan := make(chan bool)
 
 	var cfg config
-	err := gcfg.ReadFileInto(&cfg, "./config.gcfg")
+	err := gcfg.ReadFileInto(&cfg, *configpath+"config.gcfg")
 
 	if err != nil {
 		panic(err)
 	}
 
-	regiondata := eco.LoadFiles("./data/")
-	speciesdata, err := eco.LoadSpeciesMap("data/species.json")
+	regiondata := eco.LoadFiles(cfg.Data.Path)
+	speciesdata, err := eco.LoadSpeciesMap(cfg.Data.Path + "/species.json")
 
 	if err != nil {
 		panic(err)
