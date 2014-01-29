@@ -3,7 +3,6 @@
 //
 // * http://10.0.0.10:8080/eco.json?otmcode=ULAM&diameter=11&region=LoMidWXXX
 //   negative natural gas?
-// * eco.py says that diameter should be in cm?! but database is in inches
 // * support itree override table
 //
 package main
@@ -23,8 +22,10 @@ import (
 	"time"
 )
 
-var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-var configpath = flag.String("configpath", "./", "path to the configuration")
+var (
+	cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+	configpath = flag.String("configpath", "./", "path to the configuration")
+)
 
 type config struct {
 	Database eco.DBInfo
@@ -113,6 +114,8 @@ func main() {
 		if err != nil {
 			return nil, err
 		}
+
+		diameter = diameter * eco.CentimetersPerInch
 
 		region, err := getSingleValue(in, "region")
 

@@ -17,12 +17,26 @@ type DBRow sql.Rows
 
 func (dbr *DBRow) GetDataWithRegion(
 	diameter *float64, otmcode *string, region *string) error {
-	return (*sql.Rows)(dbr).Scan(diameter, otmcode, region)
+
+	err := (*sql.Rows)(dbr).Scan(diameter, otmcode, region)
+
+	if err == nil {
+		*diameter *= CentimetersPerInch
+	}
+
+	return err
 }
 
 func (dbr *DBRow) GetDataWithoutRegion(
 	diameter *float64, otmcode *string) error {
-	return (*sql.Rows)(dbr).Scan(diameter, otmcode)
+
+	err := (*sql.Rows)(dbr).Scan(diameter, otmcode)
+
+	if err == nil {
+		*diameter *= CentimetersPerInch
+	}
+
+	return err
 }
 
 func (dbr *DBRow) Close() error {
