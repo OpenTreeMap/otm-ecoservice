@@ -1,5 +1,7 @@
 package eco
 
+var CentimetersPerInch = 2.54
+
 // Data backends are used to fetch the actual tree
 // data. The main backend right now is a postgres database.
 //
@@ -31,10 +33,14 @@ type DataBackend interface {
 type Fetchable interface {
 	// This method should only be called on a "region" fetchable
 	// object and will get the current record's data
+	//
+	// The diameter will be in centimeters
 	GetDataWithRegion(diameter *float64, otmcode *string, region *string) error
 
 	// This method can be called on any fetchable object and
 	// will get the current record's data
+	//
+	// The diameter will be in centimeters
 	GetDataWithoutRegion(diameter *float64, otmcode *string) error
 
 	// Closes this fetchable
@@ -153,6 +159,8 @@ func FactorArrayToMap(factors []float64) map[string]float64 {
 }
 
 // Calculate benefits for a single tree
+//
+// The diameter must be in centimeters
 //
 // The benefits will be added to the factorsum slice
 func CalcOneTree(
