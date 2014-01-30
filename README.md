@@ -2,7 +2,7 @@
 
 ### Example Calculation
 
-20 in Common Fig
+20 inch Common Fig
 
 Identify the OTM2/USDA code for the given species:
 FICA
