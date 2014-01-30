@@ -69,7 +69,7 @@ https://github.com/azavea/ecobenefits/blob/master/data/output__InlEmpCLM__co2_av
 BDS OTHER   55.7    55.7
 ```
 
-55.7 kgs of CO2 stored converts to 122.8 lbs
+55.7 kgs of CO2 avoided converts to 122.8 lbs
 
 CO2 sequestered:
 https://github.com/azavea/ecobenefits/blob/master/data/output__InlEmpCLM__co2_sequestered.csv
