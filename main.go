@@ -44,6 +44,12 @@ type wrapper struct {
 	Benefits map[string]float64
 }
 
+type PostData struct {
+	Param       []string
+	Where       string
+	Instance_id string
+}
+
 // Given a values list return the single value
 // associated with a given key or an error
 func getSingleValue(in url.Values, key string) (string, error) {
@@ -152,30 +158,19 @@ func main() {
 		return &wrapper{Benefits: eco.FactorArrayToMap(factorsum)}, nil
 	})
 
-	rest.HandleGET("/eco_summary.json", func(in url.Values) (*wrapper, error) {
-		instancestr, err := getSingleValue(in, "instance_id")
+	rest.HandlePOST("/eco_summary.json", func(data *PostData) (*wrapper, error) {
+		keys := data.Param
+		where := data.Where
+
+		instanceid, err := strconv.Atoi(data.Instance_id)
 
 		if err != nil {
 			return nil, err
 		}
 
-		instanceid, err := strconv.Atoi(instancestr)
+		fmt.Println(instanceid)
 
-		if err != nil {
-			return nil, err
-		}
-
-		where, err := getSingleValue(in, "where")
-
-		if err != nil {
-			return nil, err
-		}
-
-		keys, ok := in["param"]
-
-		if !ok {
-			return nil, err
-		}
+		where, keys = eco.MassageGeomQueries(where, keys)
 
 		now := time.Now()
 
@@ -191,7 +186,6 @@ func main() {
 		}
 
 		return &wrapper{Benefits: factorsums}, nil
-
 	})
 
 	rest.RunServer(
