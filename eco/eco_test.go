@@ -175,7 +175,7 @@ func generateSpeciesListFromRegion(
 	for sidx := range idx {
 		otmcode := possibleSpecies[sidx%len(possibleSpecies)]
 		diameter := rand.Float64() * 100.0
-		data[i] = &TestRecord{otmcode, diameter, region}
+		data[i] = &TestRecord{otmcode, diameter, region, sidx}
 		i++
 	}
 
@@ -188,7 +188,16 @@ func benchmarkTreesSingleRegion(targetLength int, b *testing.B) {
 	benchmarkTreesMultiRegion([]string{region}, targetLength, b)
 }
 
-func benchmarkTreesMultiRegion(regions []string, targetLength int, b *testing.B) {
+func benchmarkTreesMultiRegion(
+	regions []string, targetLength int, b *testing.B) {
+
+	benchmarkTreesMultiRegionWithOverrides(nil, regions, targetLength, b)
+}
+
+func benchmarkTreesMultiRegionWithOverrides(
+	overrides map[string]map[int]string,
+	regions []string, targetLength int, b *testing.B) {
+
 	l := LoadFiles("../data/")
 	speciesdata, _ := LoadSpeciesMap("../data/species.json")
 
@@ -207,7 +216,8 @@ func benchmarkTreesMultiRegion(regions []string, targetLength int, b *testing.B)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testingContext.Reset()
-		data, err := CalcBenefits(testingContext, speciesdata, l, 0, "")
+		data, err := CalcBenefits(
+			testingContext, speciesdata, l, overrides, 0, "")
 
 		if err != nil {
 			b.Fatalf("error: %v", err)

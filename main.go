@@ -63,6 +63,22 @@ func getSingleValue(in url.Values, key string) (string, error) {
 		fmt.Sprintf("Missing or invalid %v parameter", key))
 }
 
+func getSingleIntValue(in url.Values, key string) (int, error) {
+	str, err := getSingleValue(in, key)
+
+	if err != nil {
+		return 0, err
+	}
+
+	intv, err := strconv.Atoi(str)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return intv, nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -102,7 +118,25 @@ func main() {
 
 	db := (*eco.DBContext)(dbraw)
 
+	overrides, err := db.GetOverrideMap()
+
+	if err != nil {
+		panic(err)
+	}
+
 	rest.HandleGET("/eco.json", func(in url.Values) (*wrapper, error) {
+		instanceid, err := getSingleIntValue(in, "instanceid")
+
+		if err != nil {
+			return nil, err
+		}
+
+		speciesid, err := getSingleIntValue(in, "speciesid")
+
+		if err != nil {
+			return nil, err
+		}
+
 		otmcode, err := getSingleValue(in, "otmcode")
 
 		if err != nil {
@@ -141,9 +175,24 @@ func main() {
 			return nil, errors.New("invalid region")
 		}
 
-		itreecode, found := speciesDataForRegion[otmcode]
+		itreecode, founditree := speciesDataForRegion[otmcode]
 
-		if !found {
+		overidesForInstance, found := overrides[instanceid]
+
+		if found {
+			overridesForRegion, found := overidesForInstance[region]
+
+			if found {
+				overrideCode, found := overridesForRegion[speciesid]
+
+				if found {
+					itreecode = overrideCode
+					founditree = true
+				}
+			}
+		}
+
+		if !founditree {
 			return nil, errors.New("invalid otm code for region")
 		}
 
@@ -168,15 +217,17 @@ func main() {
 			return nil, err
 		}
 
-		fmt.Println(instanceid)
-
 		where, keys = eco.MassageGeomQueries(where, keys)
 
 		now := time.Now()
 
 		// Contains the running total of the various factors
+		instanceOverrides := overrides[instanceid]
 		factorsums, err :=
-			eco.CalcBenefits(db, speciesdata, regiondata, instanceid, where, keys...)
+			eco.CalcBenefits(
+				db, speciesdata,
+				regiondata, instanceOverrides,
+				instanceid, where, keys...)
 
 		s := time.Since(now)
 		fmt.Println(int64(s/time.Millisecond), "ms")
