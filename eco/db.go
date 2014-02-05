@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	"strings"
 )
 
 type DBInfo struct {
@@ -11,6 +12,47 @@ type DBInfo struct {
 	Password string
 	Host     string
 	Database string
+}
+
+/**
+ * Django sends geom queries that look like:
+ *
+ * ST_GeomFromEWKT('blah blah')
+ *
+ * And are used in the where param like:
+ *
+ * mapfeature.geom @@ $1
+ *
+ * However, we can't pass this in as a quoted parameter. Instead
+ * we update the call site and strip off the function call:
+ *
+ * query: mapfeature.geom @@ ST_GeomFromEWKT($1)
+ * param: blah blah
+ */
+func MassageGeomQueries(where string, params []string) (string, []string) {
+	updatedparams := make([]string, len(params))
+
+	pfx, sfx := "ST_GeomFromEWKT(", ")"
+	for idx, param := range params {
+		if strings.HasPrefix(param, pfx) &&
+			strings.HasSuffix(param, sfx) {
+			// +1/-1 offsets include the quotes
+			param = param[len(pfx)+1 : len(param)-len(sfx)-1]
+
+			newplaceholder := fmt.Sprintf("%v$%d%v", pfx, idx+1, sfx)
+			where = strings.Replace(
+				where,
+				fmt.Sprintf("$%d", idx+1),
+				newplaceholder,
+				1)
+			updatedparams[idx] = param
+		} else {
+			updatedparams[idx] = param
+		}
+
+	}
+
+	return where, updatedparams
 }
 
 type DBRow sql.Rows
@@ -171,8 +213,7 @@ func (dbc *DBContext) RowsForTreesWithRegion(
                     treemap_species.id = treemap_tree.species_id and
                     treemap_itreeregion.code is not null and
                     diameter is not null and
-                    otm_code is not null and
-                    treemap_tree.instance_id = $1
+                    otm_code is not null
                  `, where)
 
 	paramsi := convertInterface(params)
