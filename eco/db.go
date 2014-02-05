@@ -58,9 +58,9 @@ func MassageGeomQueries(where string, params []string) (string, []string) {
 type DBRow sql.Rows
 
 func (dbr *DBRow) GetDataWithRegion(
-	diameter *float64, otmcode *string, region *string) error {
+	diameter *float64, otmcode *string, speciesid *int, region *string) error {
 
-	err := (*sql.Rows)(dbr).Scan(diameter, otmcode, region)
+	err := (*sql.Rows)(dbr).Scan(diameter, speciesid, otmcode, region)
 
 	if err == nil {
 		*diameter *= CentimetersPerInch
@@ -70,9 +70,9 @@ func (dbr *DBRow) GetDataWithRegion(
 }
 
 func (dbr *DBRow) GetDataWithoutRegion(
-	diameter *float64, otmcode *string) error {
+	diameter *float64, otmcode *string, speciesid *int) error {
 
-	err := (*sql.Rows)(dbr).Scan(diameter, otmcode)
+	err := (*sql.Rows)(dbr).Scan(diameter, speciesid, otmcode)
 
 	if err == nil {
 		*diameter *= CentimetersPerInch
@@ -172,12 +172,63 @@ func convertInterface(params []string) []interface{} {
 	return paramsi
 }
 
+func (dbc *DBContext) GetOverrideMap() (map[int]map[string]map[int]string, error) {
+	db := (*sql.DB)(dbc)
+
+	overrides := make(map[int]map[string]map[int]string)
+	query := `select
+		    itree_code,
+		    treemap_itreeregion.code,
+		    treemap_species.id,
+		    treemap_species.instance_id
+		  from
+		    treemap_itreecodeoverride,
+		    treemap_itreeregion,
+		    treemap_species
+		  where
+		    treemap_itreecodeoverride.region_id =
+		      treemap_itreeregion.id AND
+		    treemap_itreecodeoverride.instance_species_id =
+		      treemap_species.id
+		  `
+
+	rows, err := db.Query(query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	code, region, sid, iid := "", "", 0, 0
+
+	for rows.Next() {
+		rows.Scan(&code, &region, &sid, &iid)
+
+		regionsmap, found := overrides[iid]
+
+		if !found {
+			regionsmap = make(map[string]map[int]string)
+			overrides[iid] = regionsmap
+		}
+
+		sidmap, found := regionsmap[region]
+
+		if !found {
+			sidmap = make(map[int]string)
+			regionsmap[region] = sidmap
+		}
+
+		sidmap[sid] = code
+	}
+
+	return overrides, nil
+}
+
 func (dbc *DBContext) RowsForTreesWithoutRegion(
 	where string, params ...string) (Fetchable, error) {
 	db := (*sql.DB)(dbc)
 
 	query := fmt.Sprintf(
-		`select diameter, treemap_species.otm_code
+		`select diameter, treemap_species.id, treemap_species.otm_code
                     from treemap_species, treemap_tree
                     where
                        %v and
@@ -197,7 +248,9 @@ func (dbc *DBContext) RowsForTreesWithRegion(
 
 	query := fmt.Sprintf(
 		`select
-                    diameter, treemap_species.otm_code,
+                    diameter,
+                    treemap_species.id,
+	            treemap_species.otm_code,
                     treemap_itreeregion.code
                  from
                     treemap_species,

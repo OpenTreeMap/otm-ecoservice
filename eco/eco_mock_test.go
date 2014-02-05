@@ -5,9 +5,10 @@ import (
 )
 
 type TestRecord struct {
-	otmcode  string
-	diameter float64
-	region   string
+	otmcode   string
+	diameter  float64
+	region    string
+	speciesid int
 }
 
 type TestingContext struct {
@@ -22,8 +23,12 @@ func (t *TestingContext) Reset() {
 	t.activeIndex = -1
 }
 
+func (t *TestingContext) GetOverrideMap() (map[int]map[string]map[int]string, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (t *TestingContext) GetDataWithRegion(
-	diameter *float64, otmcode *string, region *string) error {
+	diameter *float64, otmcode *string, speciesid *int, region *string) error {
 
 	// Can't call this method
 	if !t.hasRegions {
@@ -38,12 +43,13 @@ func (t *TestingContext) GetDataWithRegion(
 	*diameter = data.diameter
 	*otmcode = data.otmcode
 	*region = data.region
+	*speciesid = data.speciesid
 
 	return nil
 }
 
 func (t *TestingContext) GetDataWithoutRegion(
-	diameter *float64, otmcode *string) error {
+	diameter *float64, otmcode *string, speciesid *int) error {
 
 	// Can't call this method
 	if t.hasRegions {
@@ -58,6 +64,7 @@ func (t *TestingContext) GetDataWithoutRegion(
 
 	*diameter = data.diameter
 	*otmcode = data.otmcode
+	*speciesid = data.speciesid
 
 	return nil
 }

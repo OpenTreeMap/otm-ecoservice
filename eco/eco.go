@@ -24,6 +24,11 @@ type DataBackend interface {
 	// a given instance - including the spatial join over the
 	// regions table
 	RowsForTreesWithRegion(string, ...string) (Fetchable, error)
+
+	// Get a map for all of the overrides on the database
+	// The map should end up looking something like:
+	// instanceid -> region -> species id -> itreecode
+	GetOverrideMap() (map[int]map[string]map[int]string, error)
 }
 
 // Fetchables come out of the database backend and essentially
@@ -35,13 +40,15 @@ type Fetchable interface {
 	// object and will get the current record's data
 	//
 	// The diameter will be in centimeters
-	GetDataWithRegion(diameter *float64, otmcode *string, region *string) error
+	GetDataWithRegion(diameter *float64, otmcode *string,
+		speciesid *int, region *string) error
 
 	// This method can be called on any fetchable object and
 	// will get the current record's data
 	//
 	// The diameter will be in centimeters
-	GetDataWithoutRegion(diameter *float64, otmcode *string) error
+	GetDataWithoutRegion(
+		diameter *float64, otmcode *string, speciesid *int) error
 
 	// Closes this fetchable
 	Close() error
@@ -61,6 +68,11 @@ type Fetchable interface {
 // regiondata maps regions to factor lists
 // region -> slice of datafiles
 //
+// Overrides is a map like:
+// region -> species id -> itree code
+//
+// That allows itree overrides on a per-species/instance level
+//
 // Note that the ith element of the datafiles slice is
 // the ith factor from eco.Factors
 //
@@ -68,6 +80,7 @@ func CalcBenefits(
 	db DataBackend,
 	speciesdata map[string]map[string]string,
 	regiondata map[string][]*Datafile,
+	overrides map[string]map[int]string,
 	instanceid int,
 	where string,
 	params ...string) (map[string]float64, error) {
@@ -103,25 +116,35 @@ func CalcBenefits(
 
 	diameter := 0.0
 	otmcode := ""
+	speciesid := 0
 
 	var speciesDataForRegion map[string]string
 	var factorDataForRegion []*Datafile
+	var overridesForRegion map[int]string
 
 	if useFixedRegion {
 		speciesDataForRegion = speciesdata[region]
 		factorDataForRegion = regiondata[region]
+
+		if overrides != nil {
+			overridesForRegion = overrides[region]
+		}
 	}
 
 	itreecode := ""
 
 	for rows.Next() {
 		if useFixedRegion {
-			err = rows.GetDataWithoutRegion(&diameter, &otmcode)
+			err = rows.GetDataWithoutRegion(&diameter, &otmcode, &speciesid)
 		} else {
-			err = rows.GetDataWithRegion(&diameter, &otmcode, &region)
+			err = rows.GetDataWithRegion(&diameter, &otmcode, &speciesid, &region)
 
 			speciesDataForRegion = speciesdata[region]
 			factorDataForRegion = regiondata[region]
+
+			if overrides != nil {
+				overridesForRegion = overrides[region]
+			}
 		}
 
 		if err != nil {
@@ -129,6 +152,14 @@ func CalcBenefits(
 		}
 
 		itreecode = speciesDataForRegion[otmcode]
+
+		if overridesForRegion != nil {
+			itreecodeOver, found := overridesForRegion[speciesid]
+
+			if found {
+				itreecode = itreecodeOver
+			}
+		}
 
 		if itreecode != "" {
 			CalcOneTree(
