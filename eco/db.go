@@ -88,7 +88,7 @@ func (dbc *DBContext) GetRegionGeoms() (map[int]Region, error) {
 }
 
 func (dbc *DBContext) GetRegionsForInstance(
-	fregions map[int]Region, instance int) ([]Region, error) {
+	regions map[int]Region, instance int) ([]Region, error) {
 
 	db := (*sql.DB)(dbc)
 
