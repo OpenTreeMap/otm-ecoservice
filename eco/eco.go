@@ -7,28 +7,22 @@ var CentimetersPerInch = 2.54
 //
 // The testing code also provides a mock implementation
 type DataBackend interface {
-	// If an instance only contains a single region or the
-	// given instance has a region override set, return
-	// the single instance
-	//
-	// If the instance has multiple overlapping regions, returns
-	// the empty string. If the instance has no overlapping regions
-	// this function also return the empty string
-	GetRegionForInstance(int) (string, error)
+	// Given a mapping of region ids to region geoms
+	// return the set of regions that intersect the given
+	// instance
+	GetRegionsForInstance(
+		regions map[int]Region, instance int) ([]Region, error)
 
-	// Get a fetchable for all trees with a diameter and species in
-	// a given instance - the region data will not be fetched
-	RowsForTreesWithoutRegion(string, ...string) (Fetchable, error)
-
-	// Get a fetchable for all trees with a diameter and species in
-	// a given instance - including the spatial join over the
-	// regions table
-	RowsForTreesWithRegion(string, ...string) (Fetchable, error)
+	// Get a fetchable with the given sql string
+	ExecSql(string) (Fetchable, error)
 
 	// Get a map for all of the overrides on the database
 	// The map should end up looking something like:
 	// instanceid -> region -> species id -> itreecode
 	GetOverrideMap() (map[int]map[string]map[int]string, error)
+
+	// Get all itree geometries
+	GetRegionGeoms() (map[int]Region, error)
 }
 
 // Fetchables come out of the database backend and essentially
@@ -40,8 +34,9 @@ type Fetchable interface {
 	// object and will get the current record's data
 	//
 	// The diameter will be in centimeters
-	GetDataWithRegion(diameter *float64, otmcode *string,
-		speciesid *int, region *string) error
+	GetDataWithRegion(
+		diameter *float64, otmcode *string,
+		speciesid *int, x *float64, y *float64) error
 
 	// This method can be called on any fetchable object and
 	// will get the current record's data
@@ -60,6 +55,15 @@ type Fetchable interface {
 
 // Calculate ecobenefits over an instance in the given backend
 //
+// Regions are a list of intersecting regions the check. This can
+// be nil or empty only if the "region" parameter is specified
+//
+// To use a fixed region pass in a valid "region" parameter
+// if this parameter is passed in the regions array will be
+// ignored
+//
+// Rows is the fetchable set to use
+//
 // speciesdata is a map to itreecode:
 // region --> otmcode --> itreecode
 //
@@ -76,47 +80,27 @@ type Fetchable interface {
 // Note that the ith element of the datafiles slice is
 // the ith factor from eco.Factors
 //
-func CalcBenefits(
-	db DataBackend,
+func CalcBenefitsWithData(
+	regions []Region,
+	rows Fetchable,
+	region string,
 	speciesdata map[string]map[string]string,
 	regiondata map[string][]*Datafile,
-	overrides map[string]map[int]string,
-	instanceid int,
-	where string,
-	params ...string) (map[string]float64, error) {
-
-	// Using a fixed region lets us avoid costly
-	// hash lookups. While we don't yet cache this value, we should
-	// consider it since instace geometries change so rarely
-	region, err := db.GetRegionForInstance(instanceid)
-
-	if err != nil {
-		return nil, err
-	}
+	overrides map[string]map[int]string) (map[string]float64, error) {
 
 	useFixedRegion := len(region) > 0
-
-	var rows Fetchable
-
-	if useFixedRegion {
-		rows, err = db.RowsForTreesWithoutRegion(where, params...)
-	} else {
-		rows, err = db.RowsForTreesWithRegion(where, params...)
-	}
-
-	if err != nil {
-		panic(err)
-		return nil, err
-	}
-
-	defer rows.Close()
-
 	factorsum := make([]float64, len(Factors))
 	ntrees := 0
 
 	diameter := 0.0
 	otmcode := ""
 	speciesid := 0
+	x := 0.0
+	y := 0.0
+
+	// Last index of found polygon
+	lastidx := 0
+	regionlen := len(regions)
 
 	var speciesDataForRegion map[string]string
 	var factorDataForRegion []*Datafile
@@ -132,12 +116,41 @@ func CalcBenefits(
 	}
 
 	itreecode := ""
+	var err error
 
 	for rows.Next() {
 		if useFixedRegion {
-			err = rows.GetDataWithoutRegion(&diameter, &otmcode, &speciesid)
+			err = rows.GetDataWithoutRegion(
+				&diameter, &otmcode, &speciesid)
 		} else {
-			err = rows.GetDataWithRegion(&diameter, &otmcode, &speciesid, &region)
+			err = rows.GetDataWithRegion(
+				&diameter, &otmcode, &speciesid, &x, &y)
+
+			region = ""
+
+			pt := CreateGeosPtWithXY(x, y)
+			defer DestroyPt(pt)
+
+			for i := 0; i < regionlen; i += 1 {
+				// consecutive trees have a high spatial
+				// correlation so try the last successful
+				// polygon first
+				calcidx := (i + lastidx) % regionlen
+				regiongeom := regions[calcidx]
+
+				intersects, err := Intersects(
+					regiongeom.geom, pt)
+
+				if err != nil {
+					return nil, err
+				}
+
+				if intersects {
+					lastidx = calcidx
+					region = regiongeom.Code
+					break
+				}
+			}
 
 			speciesDataForRegion = speciesdata[region]
 			factorDataForRegion = regiondata[region]
@@ -209,6 +222,10 @@ func CalcOneTree(
 		// faster it would do the algo good
 		values := data.Values[itreecode]
 		breaks := data.Breaks
+
+		if len(values) == 0 {
+			continue
+		}
 
 		dbhRangeMin := 0.0
 		dbhRangeMax := 1.0

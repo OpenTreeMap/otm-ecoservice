@@ -1,6 +1,7 @@
 package eco
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 )
@@ -155,10 +156,9 @@ func TestSpecificTreeData(t *testing.T) {
 
 func generateSpeciesListFromRegion(
 	speciesdata map[string]map[string]string,
-	targetLength int,
-	region string) []*TestRecord {
+	targetLength int, region Region) []*TestRecord {
 
-	speciesmap := speciesdata[region]
+	speciesmap := speciesdata[region.Code]
 
 	possibleSpecies := make([]string, len(speciesmap))
 	i := 0
@@ -173,9 +173,10 @@ func generateSpeciesListFromRegion(
 
 	i = 0
 	for sidx := range idx {
+		x, y := GetXYOnSurface(region.geom)
 		otmcode := possibleSpecies[sidx%len(possibleSpecies)]
 		diameter := rand.Float64() * 100.0
-		data[i] = &TestRecord{otmcode, diameter, region, sidx}
+		data[i] = &TestRecord{otmcode, diameter, x, y, sidx}
 		i++
 	}
 
@@ -183,20 +184,50 @@ func generateSpeciesListFromRegion(
 }
 
 func benchmarkTreesSingleRegion(targetLength int, b *testing.B) {
-	region := "LoMidWXXX"
+	info := regionInfos[0]
 
-	benchmarkTreesMultiRegion([]string{region}, targetLength, b)
+	benchmarkTreesMultiRegion([]regioninfo{info},
+		targetLength, b)
 }
 
 func benchmarkTreesMultiRegion(
-	regions []string, targetLength int, b *testing.B) {
+	regions []regioninfo, targetLength int, b *testing.B) {
 
 	benchmarkTreesMultiRegionWithOverrides(nil, regions, targetLength, b)
 }
 
+func makeSurface(x float64) Geom {
+	x1, y1 := x, 0.0
+	x2, y2 := x1+1.0, 3.0
+
+	shapewkt := fmt.Sprintf(
+		"POLYGON((%f %f, %f %f, %f %f, %f %f, %f %f))",
+		x1, y1,
+		x1, y2,
+		x2, y2,
+		x2, y1,
+		x1, y1)
+
+	return MakeGeosGeom(shapewkt)
+}
+
 func benchmarkTreesMultiRegionWithOverrides(
 	overrides map[string]map[int]string,
-	regions []string, targetLength int, b *testing.B) {
+	regioninfos []regioninfo,
+	targetLength int, b *testing.B) {
+
+	region := ""
+	if len(regioninfos) == 1 {
+		region = regioninfos[0].region
+	}
+
+	regions := make([]Region, len(regioninfos))
+
+	InitGeos()
+
+	for i, v := range regioninfos {
+		regions[i] = Region{v.region, makeSurface(v.xcoord)}
+	}
 
 	l := LoadFiles("../data/")
 	speciesdata, _ := LoadSpeciesMap("../data/species.json")
@@ -206,18 +237,20 @@ func benchmarkTreesMultiRegionWithOverrides(
 
 	for i := range regions {
 		newdata := generateSpeciesListFromRegion(
-			speciesdata, targetLengthPerRegion, regions[i])
+			speciesdata, targetLengthPerRegion,
+			regions[i])
 		data = append(data, newdata...)
 	}
 
 	testingContext := &TestingContext{
-		len(regions) > 1, regions[0], 0, data}
+		len(regions) > 1, regioninfos[0], 0, data}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testingContext.Reset()
-		data, err := CalcBenefits(
-			testingContext, speciesdata, l, overrides, 0, "")
+		data, err := CalcBenefitsWithData(
+			regions, testingContext, region, speciesdata,
+			l, overrides)
 
 		if err != nil {
 			b.Fatalf("error: %v", err)
@@ -225,35 +258,64 @@ func benchmarkTreesMultiRegionWithOverrides(
 		benchdump = data
 	}
 
+	for _, r := range regions {
+		GeosDestroy(r.geom)
+	}
+
 }
 
-// Store stuff to this variable to prevent the compiler
-// from getting to tricky
+func regionsToRegionInfo(r []string) []regioninfo {
+	infos := make([]regioninfo, len(r))
+
+	for i, v := range r {
+		infos[i] = regioninfo{v, geomCorners[v]}
+	}
+
+	return infos
+}
+
 var (
+	// Store stuff to this variable to prevent the compiler
+	// from getting to tricky
 	benchdump interface{}
-	regions   []string = []string{"PiedmtCLT", "NoEastXXX", "CaNCCoJBK",
+
+	regions []string = []string{"PiedmtCLT", "NoEastXXX", "CaNCCoJBK",
 		"InlValMOD", "SoCalCSMA", "GulfCoCHS",
 		"CenFlaXXX", "PacfNWLOG", "InlEmpCLM"}
+
+	geomCorners = map[string]float64{
+		"PiedmtCLT": 18.0,
+		"NoEastXXX": 2.0,
+		"CaNCCoJBK": 4.0,
+		"InlValMOD": 6.0,
+		"SoCalCSMA": 8.0,
+		"GulfCoCHS": 10.0,
+		"CenFlaXXX": 12.0,
+		"PacfNWLOG": 14.0,
+		"InlEmpCLM": 16.0,
+	}
+
+	regionInfos = regionsToRegionInfo(regions)
 )
 
 func BenchmarkTreesMultiRegion100(b *testing.B) {
-	benchmarkTreesMultiRegion(regions, 1e2, b)
+	benchmarkTreesMultiRegion(regionInfos, 1e2, b)
 }
 
 func BenchmarkTreesMultiRegion1k(b *testing.B) {
-	benchmarkTreesMultiRegion(regions, 1e3, b)
+	benchmarkTreesMultiRegion(regionInfos, 1e3, b)
 }
 
 func BenchmarkTreesMultiRegion10k(b *testing.B) {
-	benchmarkTreesMultiRegion(regions, 1e4, b)
+	benchmarkTreesMultiRegion(regionInfos, 1e4, b)
 }
 
 func BenchmarkTreesMultiRegion100k(b *testing.B) {
-	benchmarkTreesMultiRegion(regions, 1e5, b)
+	benchmarkTreesMultiRegion(regionInfos, 1e5, b)
 }
 
 func BenchmarkTreesMultiRegion1M(b *testing.B) {
-	benchmarkTreesMultiRegion(regions, 1e6, b)
+	benchmarkTreesMultiRegion(regionInfos, 1e6, b)
 }
 
 func BenchmarkTreesSingleRegion100(b *testing.B)  { benchmarkTreesSingleRegion(1e2, b) }
