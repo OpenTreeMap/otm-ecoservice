@@ -7,13 +7,19 @@ import (
 type TestRecord struct {
 	otmcode   string
 	diameter  float64
-	region    string
+	x         float64
+	y         float64
 	speciesid int
+}
+
+type regioninfo struct {
+	region string
+	xcoord float64
 }
 
 type TestingContext struct {
 	hasRegions   bool
-	singleRegion string
+	singleRegion regioninfo
 	activeIndex  int
 
 	data []*TestRecord
@@ -28,7 +34,8 @@ func (t *TestingContext) GetOverrideMap() (map[int]map[string]map[int]string, er
 }
 
 func (t *TestingContext) GetDataWithRegion(
-	diameter *float64, otmcode *string, speciesid *int, region *string) error {
+	diameter *float64, otmcode *string,
+	speciesid *int, x *float64, y *float64) error {
 
 	// Can't call this method
 	if !t.hasRegions {
@@ -42,8 +49,9 @@ func (t *TestingContext) GetDataWithRegion(
 
 	*diameter = data.diameter
 	*otmcode = data.otmcode
-	*region = data.region
 	*speciesid = data.speciesid
+	*x = data.x
+	*y = data.y
 
 	return nil
 }
@@ -83,22 +91,18 @@ func (t *TestingContext) Next() bool {
 	return true
 }
 
-func (t *TestingContext) GetRegionForInstance(instance int) (string, error) {
-	// Has region data in the records, return nil
-	// indicating that we must grab region info
-	if t.hasRegions {
-		return "", nil
+func (t *TestingContext) GetRegionsForInstance(
+	regions map[int]Region, instance int) ([]Region, error) {
+
+	regionsslice := make([]Region, len(regions))
+
+	for _, v := range regions {
+		regionsslice = append(regionsslice, v)
 	}
 
-	return t.singleRegion, nil
+	return regionsslice, nil
 }
 
-func (t *TestingContext) RowsForTreesWithRegion(
-	where string, params ...string) (Fetchable, error) {
-	return Fetchable(t), nil
-}
-
-func (t *TestingContext) RowsForTreesWithoutRegion(
-	where string, params ...string) (Fetchable, error) {
+func (t *TestingContext) ExecSql() (Fetchable, error) {
 	return Fetchable(t), nil
 }

@@ -45,8 +45,8 @@ type wrapper struct {
 }
 
 type PostData struct {
-	Param       []string
-	Where       string
+	Region      string
+	Query       string
 	Instance_id string
 }
 
@@ -119,6 +119,13 @@ func main() {
 	db := (*eco.DBContext)(dbraw)
 
 	overrides, err := db.GetOverrideMap()
+
+	if err != nil {
+		panic(err)
+	}
+
+	eco.InitGeos()
+	regiongeometry, err := db.GetRegionGeoms()
 
 	if err != nil {
 		panic(err)
@@ -208,8 +215,8 @@ func main() {
 	})
 
 	rest.HandlePOST("/eco_summary.json", func(data *PostData) (*wrapper, error) {
-		keys := data.Param
-		where := data.Where
+		query := data.Query
+		region := data.Region
 
 		instanceid, err := strconv.Atoi(data.Instance_id)
 
@@ -217,20 +224,45 @@ func main() {
 			return nil, err
 		}
 
-		where, keys = eco.MassageGeomQueries(where, keys)
-
 		now := time.Now()
+
+		// Using a fixed region lets us avoid costly
+		// hash lookups. While we don't yet cache this value, we should
+		// consider it since instance geometries change so rarely
+		var regions []eco.Region
+
+		if len(region) == 0 {
+			regions, err = db.GetRegionsForInstance(
+				regiongeometry, instanceid)
+
+			if err != nil {
+				return nil, err
+			}
+
+			if len(regions) == 1 {
+				region = regions[0].Code
+			}
+		}
 
 		// Contains the running total of the various factors
 		instanceOverrides := overrides[instanceid]
-		factorsums, err :=
-			eco.CalcBenefits(
-				db, speciesdata,
-				regiondata, instanceOverrides,
-				instanceid, where, keys...)
+
+		rows, err := db.ExecSql(query)
 
 		s := time.Since(now)
-		fmt.Println(int64(s/time.Millisecond), "ms")
+		fmt.Println(int64(s/time.Millisecond), "ms (query)")
+
+		if err != nil {
+			return nil, err
+		}
+
+		factorsums, err :=
+			eco.CalcBenefitsWithData(
+				regions, rows, region,
+				speciesdata, regiondata, instanceOverrides)
+
+		s = time.Since(now)
+		fmt.Println(int64(s/time.Millisecond), "ms (total)")
 
 		if err != nil {
 			return nil, err

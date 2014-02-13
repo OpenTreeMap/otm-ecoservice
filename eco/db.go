@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
-	"strings"
 )
 
 type DBInfo struct {
@@ -14,53 +13,16 @@ type DBInfo struct {
 	Database string
 }
 
-/**
- * Django sends geom queries that look like:
- *
- * ST_GeomFromEWKT('blah blah')
- *
- * And are used in the where param like:
- *
- * mapfeature.geom @@ $1
- *
- * However, we can't pass this in as a quoted parameter. Instead
- * we update the call site and strip off the function call:
- *
- * query: mapfeature.geom @@ ST_GeomFromEWKT($1)
- * param: blah blah
- */
-func MassageGeomQueries(where string, params []string) (string, []string) {
-	updatedparams := make([]string, len(params))
-
-	pfx, sfx := "ST_GeomFromEWKT(", ")"
-	for idx, param := range params {
-		if strings.HasPrefix(param, pfx) &&
-			strings.HasSuffix(param, sfx) {
-			// +1/-1 offsets include the quotes
-			param = param[len(pfx)+1 : len(param)-len(sfx)-1]
-
-			newplaceholder := fmt.Sprintf("%v$%d%v", pfx, idx+1, sfx)
-			where = strings.Replace(
-				where,
-				fmt.Sprintf("$%d", idx+1),
-				newplaceholder,
-				1)
-			updatedparams[idx] = param
-		} else {
-			updatedparams[idx] = param
-		}
-
-	}
-
-	return where, updatedparams
-}
-
 type DBRow sql.Rows
 
 func (dbr *DBRow) GetDataWithRegion(
-	diameter *float64, otmcode *string, speciesid *int, region *string) error {
+	diameter *float64,
+	otmcode *string,
+	speciesid *int,
+	x *float64,
+	y *float64) error {
 
-	err := (*sql.Rows)(dbr).Scan(diameter, speciesid, otmcode, region)
+	err := (*sql.Rows)(dbr).Scan(diameter, speciesid, otmcode, x, y)
 
 	if err == nil {
 		*diameter *= CentimetersPerInch
@@ -98,36 +60,40 @@ func OpenDatabaseConnection(info *DBInfo) (*sql.DB, error) {
 	return sql.Open("postgres", cxnString)
 }
 
-func (dbc *DBContext) GetRegionForInstance(instance int) (string, error) {
+func (dbc *DBContext) GetRegionGeoms() (map[int]Region, error) {
 	db := (*sql.DB)(dbc)
+
 	rows, err :=
-		db.Query(`select itree_region_default
-                          from treemap_instance
-                          where treemap_instance.id = $1`,
-			instance)
+		db.Query("select id, code, ST_AsText(geometry) from treemap_itreeregion")
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	defer rows.Close()
 
-	region := ""
+	geoms := make(map[int]Region)
 
-	rows.Next()
-	rows.Scan(&region)
+	code := ""
+	wkt := ""
+	id := 0
 
-	// The instance has specified a forced override
-	// so bail now, returning that value
-	if len(region) > 0 {
-		return region, nil
+	for rows.Next() {
+		rows.Scan(&id, &code, &wkt)
+
+		geoms[id] = Region{code, MakeGeosGeom(wkt)}
 	}
 
-	// We can save a ton of time by pre-loading
-	// region data if a given instance only
-	// intersects a single eco region
-	rows, err =
-		db.Query(`select distinct code
+	return geoms, nil
+}
+
+func (dbc *DBContext) GetRegionsForInstance(
+	fregions map[int]Region, instance int) ([]Region, error) {
+
+	db := (*sql.DB)(dbc)
+
+	rows, err :=
+		db.Query(`select treemap_itreeregion.id
                           from treemap_instance
                              left join treemap_itreeregion
                              on st_intersects(
@@ -135,41 +101,36 @@ func (dbc *DBContext) GetRegionForInstance(instance int) (string, error) {
                                 treemap_instance.bounds)
                           where
                              code is not null and
-                          treemap_instance.id = $1 limit 2`, instance)
+                          treemap_instance.id = $1`, instance)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	defer rows.Close()
 
-	if rows.Next() {
-		rows.Scan(&region)
+	intersectingRegions := make([]Region, 0)
 
-		// If true there are multiple rows in this
-		// query so we can't take this shortcut
-		if rows.Next() {
-			return "", nil
-		} else {
-			// Only one, and we found it!
-			return region, nil
-		}
+	id := 0
+
+	for rows.Next() {
+		rows.Scan(&id)
+
+		intersectingRegions = append(
+			intersectingRegions, regions[id])
 	}
 
-	// The query didn't return anything at all
-	// which means that we wont have any data, but
-	// that will be handled at a future step
-	return "", nil
+	return intersectingRegions, nil
 }
 
-func convertInterface(params []string) []interface{} {
-	paramsi := make([]interface{}, len(params))
+func (dbc *DBContext) ExecSql(query string) (Fetchable, error) {
+	db := (*sql.DB)(dbc)
 
-	for i, v := range params {
-		paramsi[i] = interface{}(v)
-	}
+	fmt.Println(query)
 
-	return paramsi
+	rows, err := db.Query(query)
+
+	return (*DBRow)(rows), err
 }
 
 func (dbc *DBContext) GetOverrideMap() (map[int]map[string]map[int]string, error) {
@@ -221,57 +182,4 @@ func (dbc *DBContext) GetOverrideMap() (map[int]map[string]map[int]string, error
 	}
 
 	return overrides, nil
-}
-
-func (dbc *DBContext) RowsForTreesWithoutRegion(
-	where string, params ...string) (Fetchable, error) {
-	db := (*sql.DB)(dbc)
-
-	query := fmt.Sprintf(
-		`select diameter, treemap_species.id, treemap_species.otm_code
-                    from treemap_species, treemap_tree
-                    where
-                       %v and
-                       treemap_species.id = treemap_tree.species_id and
-                       diameter is not null`, where)
-
-	paramsi := convertInterface(params)
-
-	rows, err := db.Query(query, paramsi...)
-
-	return (*DBRow)(rows), err
-}
-
-func (dbc *DBContext) RowsForTreesWithRegion(
-	where string, params ...string) (Fetchable, error) {
-	db := (*sql.DB)(dbc)
-
-	query := fmt.Sprintf(
-		`select
-                    diameter,
-                    treemap_species.id,
-	            treemap_species.otm_code,
-                    treemap_itreeregion.code
-                 from
-                    treemap_species,
-                    treemap_tree,
-                    treemap_mapfeature
-                    left join treemap_itreeregion
-                       on ST_Contains(
-                          treemap_itreeregion.geometry,
-                          treemap_mapfeature.the_geom_webmercator)
-                 where
-                    %v and
-                    treemap_mapfeature.id = treemap_tree.plot_id and
-                    treemap_species.id = treemap_tree.species_id and
-                    treemap_itreeregion.code is not null and
-                    diameter is not null and
-                    otm_code is not null
-                 `, where)
-
-	paramsi := convertInterface(params)
-
-	rows, err := db.Query(query, paramsi...)
-
-	return (*DBRow)(rows), err
 }
