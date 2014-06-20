@@ -91,9 +91,6 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	// See RunServer below
-	stopServerChan := make(chan bool)
-
 	var cfg config
 	err := gcfg.ReadFileInto(&cfg, *configpath)
 
@@ -272,6 +269,5 @@ func main() {
 	})
 
 	rest.RunServer(
-		fmt.Sprintf("%v:%v", cfg.Server.Host, cfg.Server.Port),
-		stopServerChan)
+		fmt.Sprintf("%v:%v", cfg.Server.Host, cfg.Server.Port), nil)
 }
