@@ -1,0 +1,10 @@
+language: go
+
+go:
+  - 1.2
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -yq libgeos-dev
+
+script: go test eco/*
