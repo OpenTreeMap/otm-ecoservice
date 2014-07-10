@@ -1,0 +1,19 @@
+#!/bin/sh -e
+
+export GOBIN=${PWD}/bin
+export GOPATH=${PWD}/gopath
+
+rm -rf bin
+rm -rf gopath
+mkdir -p gopath/src/github.com/azavea/ecobenefits
+cp main.go gopath/src/github.com/azavea/ecobenefits
+cp -r eco gopath/src/github.com/azavea/ecobenefits/eco
+go get -v github.com/azavea/ecobenefits
+
+go clean
+go test eco/*
+go install github.com/azavea/ecobenefits
+cp -r data bin/data
+cp config.gcfg.template bin
+
+cd bin && tar czf ecoservice.tar.gz --transform 's|^|ecoservice/|' *
