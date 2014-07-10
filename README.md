@@ -1,6 +1,44 @@
-## Ecobenefits REST service based in Go
+# ecoservice
 
-### Example Calculation
+REST services for calculating eco benefits for trees in an [OpenTreeMap](https://github.com/OpenTreeMap) database.
+
+## Getting Started
+
+Compiling the ``ecoservice`` executable requires:
+
+* [go](http://golang.org/)
+* [GEOS](http://trac.osgeo.org/geos/)
+
+The ``bootstrap`` script is an example of how to set up a development
+environment on Ubuntu.
+
+Running ``./build`` will:
+
+* fetch dependencies
+* run the tests
+* compile the ``ecoservice`` executable into the ``bin`` directory.
+* copy the data and config template to the ``bin`` directory
+* tar the contents of the bin directory as ``ecoservice.tar.gz``
+
+
+## Running the ``ecoservice``
+
+The ``ecobenefits`` executable must be run with a configuration file
+containing three sections
+
+* ``database`` - PostgreSQL database connection information
+* ``server`` - The host address and port on which the service will listen
+* ``data`` - The absolute path to the data directory (with a trailing
+  slash)
+
+A template of this config file is provided in ``config.gcfg.template``.
+
+Once a config file has been created, the ``ecobenefits`` service can be launched like so:
+
+``/path/to/ecobenefits --configpath=/path/to/config.gcfg``
+
+
+## Example Calculation
 
 20 inch Common Fig
 
@@ -113,8 +151,3 @@ $ curl "localhost:13000/eco.json?otmcode=FICA&diameter=20&region=InlEmpCLM"
   }
 }
 ```
-
-
-### Installation
-
-TODO

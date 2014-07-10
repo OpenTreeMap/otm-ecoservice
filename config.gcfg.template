@@ -1,0 +1,12 @@
+[database]
+user=DBUSERNAME
+database=DATABASE
+password=DBPASSWORD
+host=localhost
+
+[server]
+host=127.0.0.1
+port=13000
+
+[data]
+path=/ABSOLUTE/PATH/TO/data/
