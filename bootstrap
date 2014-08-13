@@ -1,6 +1,10 @@
-#!/bin/sh -e
+#!/bin/bash
+
+set -e
+set -x
+
 apt-get update
-apt-get install -y libgeos-dev git wget
+apt-get install -y libgeos-dev git wget mercurial
 
 VERSION=1.2.2
 OS=linux

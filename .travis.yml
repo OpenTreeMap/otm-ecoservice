@@ -4,7 +4,9 @@ go:
   - 1.2
 
 before_install:
+  - export PATH=$HOME/gopath/bin:$PATH
   - sudo apt-get update
   - sudo apt-get install -yq libgeos-dev
+  - go get github.com/tools/godep
 
-script: go test eco/*
+script: godep go test eco/*
