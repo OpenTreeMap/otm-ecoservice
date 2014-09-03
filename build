@@ -21,5 +21,6 @@ godep go test eco/*
 go install github.com/azavea/ecobenefits
 cp -r data bin/data
 cp config.gcfg.template bin
+rm bin/godep
 
 cd bin && tar czf ecoservice.tar.gz --transform 's|^|ecoservice/|' *
