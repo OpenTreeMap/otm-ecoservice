@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/OpenTreeMap/ecobenefits",
+	"ImportPath": "github.com/azavea/ecobenefits",
 	"GoVersion": "go1.2.2",
 	"Deps": [
 		{
