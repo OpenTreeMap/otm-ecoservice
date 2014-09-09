@@ -4,27 +4,39 @@ REST services for calculating eco benefits for trees in an [OpenTreeMap](https:/
 
 ## Getting Started
 
-Compiling the ``ecoservice`` executable requires:
+In order make the process of developing against or building this project easier, we've wrapped everything inside of a [Vagrant](https://www.vagrantup.com/) project. In addition to Vagrant, Ansible is used to provision the Vagrant virtual machine. This ensures that all of the dependencies are in place.
 
-* [go](http://golang.org/)
-* [GEOS](http://trac.osgeo.org/geos/)
+First, ensure that Vagrant 1.5+ and Ansible 1.4.2+ are installed on your local workstation.
 
-The ``bootstrap`` script is an example of how to set up a development
-environment on Ubuntu.
+Next, start the Vagrant virtual machine:
 
-Running ``./build`` will:
+```bash
+$ vagrant up
+```
 
-* fetch dependencies
-* run the tests
-* compile the ``ecoservice`` executable into the ``bin`` directory.
-* copy the data and config template to the ``bin`` directory
-* tar the contents of the bin directory as ``ecoservice.tar.gz``
+You will see some Ansible output after the machine boots up. After that, SSH into the machine and execute the test suite:
 
+```bash
+$ vagrant ssh
+vagrant@otm-ecoservice:~$ cd src/github.com/azavea/ecobenefits/
+vagrant@otm-ecoservice:~/src/github.com/azavea/ecobenefits$ make test
+godep go test eco/*
+ok      command-line-arguments  0.494s
+```
+
+If you want to build a release, use the `release` target:
+
+```bash
+vagrant@otm-ecoservice:~/src/github.com/azavea/ecobenefits$ make release
+vagrant@otm-ecoservice:~/src/github.com/azavea/ecobenefits$ exit
+$ ls -l *.tar.gz
+-rw-r--r--  1 hcastro  staff  2714304 Sep  9 15:41 ecoservice.tar.gz
+```
 
 ## Running the ``ecoservice``
 
 The ``ecobenefits`` executable must be run with a configuration file
-containing three sections
+containing three sections:
 
 * ``database`` - PostgreSQL database connection information
 * ``server`` - The host address and port on which the service will listen
@@ -33,10 +45,11 @@ containing three sections
 
 A template of this config file is provided in ``config.gcfg.template``.
 
-Once a config file has been created, the ``ecobenefits`` service can be launched like so:
+Once a config file has been created, the ``ecobenefits`` service can be launched with:
 
-``/path/to/ecobenefits --configpath=/path/to/config.gcfg``
-
+```bash
+$ /path/to/ecobenefits --configpath=/path/to/config.gcfg
+```
 
 ## Example Calculation
 
