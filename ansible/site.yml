@@ -1,0 +1,16 @@
+---
+- hosts: all
+  roles:
+    - { role: "azavea.golang", golang_version: "1.2.2" }
+
+  tasks:
+    - name: Ensure that Ansible user owns GOPATH
+      file: path={{ golang_path }}
+            owner={{ ansible_ssh_user }}
+            group={{ ansible_ssh_user }}
+            state=directory
+            recurse=yes
+      when: '"development" in group_names or "test" in group_names'
+
+    - name: Install Eco Service dependencies
+      apt: pkg=libgeos-dev state=present

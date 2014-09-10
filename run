@@ -1,3 +1,0 @@
-#!/bin/sh -e
-GOPATH=`pwd`/gopath
-go run main.go --configpath=`pwd`/bin/config.gcfg

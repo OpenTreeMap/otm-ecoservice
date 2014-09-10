@@ -1,2 +1,8 @@
+.vagrant
 gopath
 bin
+
+ansible/roles/azavea.build-essential
+ansible/roles/azavea.git
+ansible/roles/azavea.mercurial
+ansible/roles/azavea.golang
