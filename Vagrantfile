@@ -30,15 +30,21 @@ if [ "up", "provision" ].include?(ARGV.first)
 end
 
 VAGRANTFILE_API_VERSION = "2"
+VAGRANT_PROXYCONF_ENDPOINT = ENV["VAGRANT_PROXYCONF_ENDPOINT"]
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/trusty64"
   config.vm.hostname = "otm-ecoservice"
 
-  # Wire up the proxy
-  if Vagrant.has_plugin?("vagrant-proxyconf")
-    config.proxy.http     = "http://#{local_ip}:8123/"
-    config.proxy.https    = "http://#{local_ip}:8123/"
+  # Wire up the proxy if:
+  #
+  #   - The vagrant-proxyconf Vagrant plugin is installed
+  #   - The user set the VAGRANT_PROXYCONF_ENDPOINT environmental variable
+  #
+  if Vagrant.has_plugin?("vagrant-proxyconf") &&
+     !VAGRANT_PROXYCONF_ENDPOINT.nil?
+    config.proxy.http     = VAGRANT_PROXYCONF_ENDPOINT
+    config.proxy.https    = VAGRANT_PROXYCONF_ENDPOINT
     config.proxy.no_proxy = "localhost,127.0.0.1"
   end
 
