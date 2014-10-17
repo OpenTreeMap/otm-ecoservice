@@ -1,22 +1,35 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+Vagrant.require_version ">= 1.5"
+
 def local_ip
   `ipconfig getifaddr en0`.strip
 end
 
-VAGRANTFILE_API_VERSION = "2"
+# Uses the contents of roles.txt to ensure that ansible-galaxy is run if any
+# dependencies are missing.
+def install_dependent_roles
+  File.foreach("ansible/roles.txt") do |line|
+    role_path = "ansible/roles/#{line.split(",").first}"
 
-# Ensure role dependencies are in place
-if [ "up", "provision" ].include?(ARGV.first) &&
-  !(File.directory?("ansible/roles/azavea.golang") || File.symlink?("ansible/roles/azavea.golang"))
+    if !File.directory?(role_path) && !File.symlink?(role_path)
+      unless system("ansible-galaxy install -f -r ansible/roles.txt -p #{File.dirname(role_path)}")
+        $stderr.puts "\nERROR: An attempt to install Ansible role dependencies failed."
+        exit(1)
+      end
 
-  unless system("ansible-galaxy install -r ansible/roles.txt -p ansible/roles")
-    $stderr.puts "\nERROR: Please install Ansible 1.4.2+ so that the ansible-galaxy binary"
-    $stderr.puts "is available."
-    exit(1)
+      break
+    end
   end
 end
+
+# Install missing role dependencies based on the contents of roles.txt
+if [ "up", "provision" ].include?(ARGV.first)
+  install_dependent_roles
+end
+
+VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "ubuntu/trusty64"
