@@ -3,10 +3,6 @@
 
 Vagrant.require_version ">= 1.5"
 
-def local_ip
-  `ipconfig getifaddr en0`.strip
-end
-
 # Uses the contents of roles.txt to ensure that ansible-galaxy is run if any
 # dependencies are missing.
 def install_dependent_roles
