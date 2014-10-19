@@ -3,14 +3,17 @@
 
 Vagrant.require_version ">= 1.5"
 
+VAGRANT_ROOT = File.dirname(__FILE__)
+
 # Uses the contents of roles.txt to ensure that ansible-galaxy is run if any
 # dependencies are missing.
 def install_dependent_roles
-  File.foreach("ansible/roles.txt") do |line|
-    role_path = "ansible/roles/#{line.split(",").first}"
+  File.foreach(File.join(VAGRANT_ROOT, "ansible/roles.txt")) do |line|
+    role_path = File.join(VAGRANT_ROOT, "ansible/roles/#{line.split(",").first}")
 
     if !File.directory?(role_path) && !File.symlink?(role_path)
-      unless system("ansible-galaxy install -f -r ansible/roles.txt -p #{File.dirname(role_path)}")
+      unless system("ansible-galaxy install -f -r "\
+        "#{File.join(VAGRANT_ROOT, "ansible/roles.txt")} -p #{File.dirname(role_path)}")
         $stderr.puts "\nERROR: An attempt to install Ansible role dependencies failed."
         exit(1)
       end
