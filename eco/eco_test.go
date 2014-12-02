@@ -78,6 +78,26 @@ func TestDataMappings(t *testing.T) {
 	}
 }
 
+func TestGetITreeCodesByRegion(t *testing.T) {
+	regionData := LoadFiles("../data/")
+	codesByRegion := GetITreeCodesByRegion(regionData)
+	
+	region := "NoEastXXX"
+	myCode := "ACPL"
+
+	codes, found := codesByRegion[region]
+	if !found {
+		t.Fatalf("Missing region %v", region)
+	}
+
+    for _, code := range codes {
+		if code == myCode {
+			return
+		}
+	}
+	t.Fatalf("Missing code %v", myCode)
+}
+
 func TestSimpleInter(t *testing.T) {
 	breaks := []float64{1.0, 3.0}
 	values := []float64{4.0, 6.0}

@@ -69,6 +69,10 @@ type Scenario struct {
 	Years []map[string]float64
 }
 
+type ITreeCodes struct {
+	Codes map[string][]string
+}
+
 // Given a values list return the single value
 // associated with a given key or an error
 func getSingleValue(in url.Values, key string) (string, error) {
@@ -190,6 +194,11 @@ func main() {
 			return itreeCode, nil
 		}
 	}
+
+	rest.HandleGET("/itree_codes.json", func() (*ITreeCodes) {
+		codes := eco.GetITreeCodesByRegion(regiondata)
+		return &ITreeCodes{Codes: codes}
+	})
 
 	rest.HandleGET("/eco.json", func(in url.Values) (*BenefitsWrapper, error) {
 		instanceid, err := getSingleIntValue(in, "instanceid")
