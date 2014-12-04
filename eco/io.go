@@ -160,3 +160,21 @@ func LoadFile(path string) *Datafile {
 
 	return file
 }
+
+func GetITreeCodesByRegion(regionData map[string][]*Datafile) map[string][]string {
+	// Return valid i-Tree codes for each i-Tree region, e.g.:
+	//     { 'CaNCCoJBK': ['AB', 'AC', ...],
+	//       'CenFlaXXX': ['ACAC2', 'ACNE', ...],
+	//       ...}
+	codes := make(map[string][]string, len(regionData))
+	for regionCode, data := range regionData {
+		// All value maps for a region use the same i-Tree codes, so just use the first one
+		valueMap := data[0].Values
+		keys := make([]string, 0, len(valueMap))
+		for k := range valueMap {
+			keys = append(keys, k)
+		}
+		codes[regionCode] = keys
+	}
+	return codes
+}

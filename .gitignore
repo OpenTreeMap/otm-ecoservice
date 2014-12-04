@@ -6,3 +6,7 @@ ansible/roles/azavea.build-essential
 ansible/roles/azavea.git
 ansible/roles/azavea.mercurial
 ansible/roles/azavea.golang
+
+ecoservice.tar.gz
+ecoservice/*
+Godeps/_workspace
