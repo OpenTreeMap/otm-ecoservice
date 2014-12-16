@@ -10,3 +10,6 @@ ansible/roles/azavea.golang
 ecoservice.tar.gz
 ecoservice/*
 Godeps/_workspace
+config.gcfg
+pkg/
+src/
