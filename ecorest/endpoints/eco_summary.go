@@ -14,12 +14,7 @@ type SummaryPostData struct {
 	Instance_id string
 }
 
-func EcoSummaryPOST(regiondata map[string][]*eco.Datafile,
-	db eco.DBContext,
-	regiongeometry map[int]eco.Region,
-	overrides map[int]map[string]map[int]string,
-	speciesdata map[string]map[string]string,
-	getItreeCode (func(string, int, string, int) (string, error))) func(*SummaryPostData) (*BenefitsWrapper, error) {
+func EcoSummaryPOST(db eco.DBContext, cache *cache.Cache) func(*SummaryPostData) (*BenefitsWrapper, error) {
 	return func(data *SummaryPostData) (*BenefitsWrapper, error) {
 		query := data.Query
 		region := data.Region
@@ -39,7 +34,7 @@ func EcoSummaryPOST(regiondata map[string][]*eco.Datafile,
 
 		if len(region) == 0 {
 			regions, err = db.GetRegionsForInstance(
-				regiongeometry, instanceid)
+				cache.RegionGeometry, instanceid)
 
 			if err != nil {
 				return nil, err
@@ -51,7 +46,7 @@ func EcoSummaryPOST(regiondata map[string][]*eco.Datafile,
 		}
 
 		// Contains the running total of the various factors
-		instanceOverrides := overrides[instanceid]
+		instanceOverrides := cache.Overrides[instanceid]
 
 		rows, err := db.ExecSql(query)
 
@@ -65,7 +60,7 @@ func EcoSummaryPOST(regiondata map[string][]*eco.Datafile,
 		factorsums, err :=
 			eco.CalcBenefitsWithData(
 				regions, rows, region,
-				speciesdata, regiondata, instanceOverrides)
+				cache.SpeciesData, cache.RegionData, instanceOverrides)
 
 		s = time.Since(now)
 		fmt.Println(int64(s/time.Millisecond), "ms (total)")

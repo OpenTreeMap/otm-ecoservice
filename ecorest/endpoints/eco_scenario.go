@@ -89,10 +89,7 @@ type Scenario struct {
 //     "aq_pm10_avoided": ...
 //   }
 // }
-func EcoScenarioPOST(regiondata map[string][]*eco.Datafile,
-	db eco.DBContext,
-	regiongeometry map[int]eco.Region,
-	getItreeCode (func(string, int, string, int) (string, error))) func(*ScenarioPostData) (*Scenario, error) {
+func EcoScenarioPOST(db eco.DBContext, cache *cache.Cache) func(*ScenarioPostData) (*Scenario, error) {
 	return func(data *ScenarioPostData) (*Scenario, error) {
 		t := time.Now()
 
@@ -108,7 +105,7 @@ func EcoScenarioPOST(regiondata map[string][]*eco.Datafile,
 		if len(scenarioRegion) == 0 {
 			var regions []eco.Region
 			regions, err = db.GetRegionsForInstance(
-				regiongeometry, instanceId)
+				cache.RegionGeometry, instanceId)
 
 			if err != nil {
 				return nil, err
@@ -131,12 +128,12 @@ func EcoScenarioPOST(regiondata map[string][]*eco.Datafile,
 				effectiveRegion = tree.Region
 			}
 
-			factorDataForRegion, found := regiondata[effectiveRegion]
+			factorDataForRegion, found := cache.RegionData[effectiveRegion]
 			if !found {
 				return nil, errors.New("No data is available for the iTree region with code " + effectiveRegion)
 			}
 
-			itreecode, err := getItreeCode(tree.Otmcode,
+			itreecode, err := cache.GetITreeCode(tree.Otmcode,
 				tree.Species_id, effectiveRegion, instanceId)
 			if err != nil {
 				return nil, err

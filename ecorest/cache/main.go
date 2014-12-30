@@ -1,4 +1,4 @@
-package ecorest
+package cache
 
 import (
 	"errors"
@@ -6,8 +6,32 @@ import (
 	"github.com/azavea/ecobenefits/eco"
 )
 
-func MakeItreeCodeCache(overrides map[int]map[string]map[int]string,
-	speciesdata map[string]map[string]string) (func(string, int, string, int) (string, error)) {
+type speciesDataMap map[string]map[string]string
+
+type overridesMap map[int]map[string]map[int]string
+
+type regionDataMap map[string][]*eco.Datafile
+
+type regionGeometryMap map[int]eco.Region
+
+type iTreeCodeRetrieverFunc func(string, int, string, int) (string, error)
+
+type Cache struct {
+	RegionData     regionDataMap
+	RegionGeometry regionGeometryMap
+	Overrides      overridesMap
+	SpeciesData    speciesDataMap
+	GetITreeCode   iTreeCodeRetrieverFunc
+}
+
+func MakeCache(regiondata regionDataMap, regiongeometry regionGeometryMap,
+	overrides overridesMap, speciesdata speciesDataMap) *Cache {
+
+	retriever := makeItreeCodeRetriever(overrides, speciesdata)
+	return &Cache{regiondata, regiongeometry, overrides, speciesdata, retriever}
+}
+
+func makeItreeCodeRetriever(overrides overridesMap, speciesdata speciesDataMap) iTreeCodeRetrieverFunc {
 	// This is implemented as a curried function so it can
 	// close over the variables set at the start of the main
 	// function, which can be expensive to load and only need to

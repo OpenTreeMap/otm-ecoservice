@@ -44,8 +44,7 @@ func getSingleIntValue(in url.Values, key string) (int, error) {
 	return intv, nil
 }
 
-func EcoGET(regiondata map[string][]*eco.Datafile,
-	getItreeCode (func(string, int, string, int) (string, error))) func(url.Values) (*BenefitsWrapper, error) {
+func EcoGET(cache *cache.Cache) func(url.Values) (*BenefitsWrapper, error) {
 	return func(in url.Values) (*BenefitsWrapper, error) {
 		instanceid, err := getSingleIntValue(in, "instanceid")
 
@@ -85,13 +84,13 @@ func EcoGET(regiondata map[string][]*eco.Datafile,
 			return nil, err
 		}
 
-		factorDataForRegion, found := regiondata[region]
+		factorDataForRegion, found := cache.RegionData[region]
 
 		if !found {
 			return nil, errors.New("invalid region")
 		}
 
-		itreecode, err := getItreeCode(otmcode, speciesid, region, instanceid)
+		itreecode, err := cache.GetITreeCode(otmcode, speciesid, region, instanceid)
 		if err != nil {
 			return nil, err
 		}
