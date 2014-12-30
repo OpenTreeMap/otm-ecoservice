@@ -29,6 +29,12 @@ type config struct {
 	}
 }
 
+func panicOnError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	flag.Parse()
 
@@ -43,40 +49,25 @@ func main() {
 
 	var cfg config
 	err := gcfg.ReadFileInto(&cfg, *configpath)
-
-	if err != nil {
-		panic(err)
-	}
+	panicOnError(err)
 
 	regiondata := eco.LoadFiles(cfg.Data.Path)
 	speciesdata, err := eco.LoadSpeciesMap(cfg.Data.Path + "/species.json")
-
-	if err != nil {
-		panic(err)
-	}
+	panicOnError(err)
 
 	dbraw, err := eco.OpenDatabaseConnection(&cfg.Database)
-
-	if err != nil {
-		panic(err)
-	}
+	panicOnError(err)
 
 	defer dbraw.Close()
 
 	db := (*eco.DBContext)(dbraw)
 
 	overrides, err := db.GetOverrideMap()
-
-	if err != nil {
-		panic(err)
-	}
+	panicOnError(err)
 
 	eco.InitGeos()
 	regiongeometry, err := db.GetRegionGeoms()
-
-	if err != nil {
-		panic(err)
-	}
+	panicOnError(err)
 
 	getItreeCode := ecorest.MakeItreeCodeCache(overrides, speciesdata)
 
