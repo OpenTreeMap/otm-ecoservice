@@ -1,10 +1,3 @@
-//
-// Todo
-//
-// * http://10.0.0.10:8080/eco.json?otmcode=ULAM&diameter=11&region=LoMidWXXX
-//   negative natural gas?
-// * support itree override table
-//
 package main
 
 import (
