@@ -89,7 +89,7 @@ type Scenario struct {
 //     "aq_pm10_avoided": ...
 //   }
 // }
-func EcoScenarioPOST(db eco.DBContext, cache *cache.Cache) func(*ScenarioPostData) (*Scenario, error) {
+func EcoScenarioPOST(cache *cache.Cache) func(*ScenarioPostData) (*Scenario, error) {
 	return func(data *ScenarioPostData) (*Scenario, error) {
 		t := time.Now()
 
@@ -104,7 +104,7 @@ func EcoScenarioPOST(db eco.DBContext, cache *cache.Cache) func(*ScenarioPostDat
 
 		if len(scenarioRegion) == 0 {
 			var regions []eco.Region
-			regions, err = db.GetRegionsForInstance(
+			regions, err = cache.Db.GetRegionsForInstance(
 				cache.RegionGeometry, instanceId)
 
 			if err != nil {

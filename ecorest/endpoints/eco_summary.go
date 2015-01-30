@@ -14,7 +14,7 @@ type SummaryPostData struct {
 	Instance_id string
 }
 
-func EcoSummaryPOST(db eco.DBContext, cache *cache.Cache) func(*SummaryPostData) (*BenefitsWrapper, error) {
+func EcoSummaryPOST(cache *cache.Cache) func(*SummaryPostData) (*BenefitsWrapper, error) {
 	return func(data *SummaryPostData) (*BenefitsWrapper, error) {
 		query := data.Query
 		region := data.Region
@@ -33,7 +33,7 @@ func EcoSummaryPOST(db eco.DBContext, cache *cache.Cache) func(*SummaryPostData)
 		var regions []eco.Region
 
 		if len(region) == 0 {
-			regions, err = db.GetRegionsForInstance(
+			regions, err = cache.Db.GetRegionsForInstance(
 				cache.RegionGeometry, instanceid)
 
 			if err != nil {
@@ -48,7 +48,7 @@ func EcoSummaryPOST(db eco.DBContext, cache *cache.Cache) func(*SummaryPostData)
 		// Contains the running total of the various factors
 		instanceOverrides := cache.Overrides[instanceid]
 
-		rows, err := db.ExecSql(query)
+		rows, err := cache.Db.ExecSql(query)
 
 		s := time.Since(now)
 		fmt.Println(int64(s/time.Millisecond), "ms (query)")

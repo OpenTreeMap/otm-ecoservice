@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/azavea/ecobenefits/eco"
+	"github.com/azavea/ecobenefits/ecorest/config"
 )
 
 type speciesDataMap map[string]map[string]string
@@ -22,13 +23,41 @@ type Cache struct {
 	Overrides      overridesMap
 	SpeciesData    speciesDataMap
 	GetITreeCode   iTreeCodeRetrieverFunc
+	Db             eco.DBContext
 }
 
-func MakeCache(regiondata regionDataMap, regiongeometry regionGeometryMap,
-	overrides overridesMap, speciesdata speciesDataMap) *Cache {
+func Init(cfg config.Config) (*Cache, func()) {
+	cache := &Cache{}
+	return cache, func() {
+		dbraw, err := eco.OpenDatabaseConnection(&cfg.Database)
+		config.PanicOnError(err)
 
-	retriever := makeItreeCodeRetriever(overrides, speciesdata)
-	return &Cache{regiondata, regiongeometry, overrides, speciesdata, retriever}
+		// this is tricky. Though the db connection will close at
+		// the end of this function, we cast it and keep a pointer in
+		// the cache, so the actual struct will live on, and be used
+		// for data to open new database connections
+		db := (*eco.DBContext)(dbraw)
+		defer dbraw.Close()
+
+		eco.InitGeos()
+
+		regiondata := eco.LoadFiles(cfg.Data.Path)
+		speciesdata, err := eco.LoadSpeciesMap(cfg.Data.Path + "/species.json")
+		config.PanicOnError(err)
+		overrides, err := db.GetOverrideMap()
+		config.PanicOnError(err)
+
+		regiongeometry, err := db.GetRegionGeoms()
+		config.PanicOnError(err)
+
+		retriever := makeItreeCodeRetriever(overrides, speciesdata)
+		cache.RegionData = regiondata
+		cache.RegionGeometry = regiongeometry
+		cache.Overrides = overrides
+		cache.SpeciesData = speciesdata
+		cache.GetITreeCode = retriever
+		cache.Db = *db
+	}
 }
 
 func makeItreeCodeRetriever(overrides overridesMap, speciesdata speciesDataMap) iTreeCodeRetrieverFunc {

@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/azavea/ecobenefits/ecorest"
+	"github.com/azavea/ecobenefits/ecorest/config"
 	"github.com/ungerik/go-rest"
 	"log"
 	"os"
@@ -28,10 +29,10 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	var cfg ecorest.Config
+	var cfg config.Config
 
 	err := gcfg.ReadFileInto(&cfg, *configpath)
-	ecorest.PanicOnError(err)
+	config.PanicOnError(err)
 
 	endpoints := ecorest.GetManager(cfg)
 
@@ -39,6 +40,7 @@ func main() {
 	rest.HandleGET("/eco.json", endpoints.EcoGET)
 	rest.HandlePOST("/eco_summary.json", endpoints.EcoSummaryPOST)
 	rest.HandlePOST("/eco_scenario.json", endpoints.EcoScenarioPOST)
+	rest.HandleGET("/invalidate_cache", endpoints.InvalidateCacheGET)
 
 	rest.RunServer(fmt.Sprintf("%v:%v", cfg.Server.Host, cfg.Server.Port), nil)
 }
