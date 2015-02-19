@@ -11,13 +11,13 @@ import (
 )
 
 type Geom struct {
-	geom   *[0]byte
-	preped *[0]byte
+	geom   *C.struct_GEOSGeom_t
+	preped *C.struct_GEOSPrepGeom_t
 }
 
 type Point struct {
-	coordseqptr *[0]byte
-	pointptr    *[0]byte
+	coordseqptr *C.struct_GEOSCoordSeq_t
+	pointptr    *C.struct_GEOSGeom_t
 }
 
 type Region struct {
