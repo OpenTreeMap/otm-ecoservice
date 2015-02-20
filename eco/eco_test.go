@@ -81,7 +81,7 @@ func TestDataMappings(t *testing.T) {
 func TestGetITreeCodesByRegion(t *testing.T) {
 	regionData := LoadFiles("../data/")
 	codesByRegion := GetITreeCodesByRegion(regionData)
-	
+
 	region := "NoEastXXX"
 	myCode := "ACPL"
 
@@ -90,7 +90,7 @@ func TestGetITreeCodesByRegion(t *testing.T) {
 		t.Fatalf("Missing region %v", region)
 	}
 
-    for _, code := range codes {
+	for _, code := range codes {
 		if code == myCode {
 			return
 		}
