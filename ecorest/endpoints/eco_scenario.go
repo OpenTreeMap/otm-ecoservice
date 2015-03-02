@@ -1,31 +1,21 @@
 package endpoints
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/azavea/ecobenefits/eco"
 	"github.com/azavea/ecobenefits/ecorest/cache"
+	"net/http"
 	"strconv"
 	"time"
 )
 
-type ScenarioPostData struct {
-	Region         string
-	Instance_id    string
-	Years          int
-	Scenario_trees []ScenarioTree
-}
-
-type ScenarioTree struct {
+type scenarioTree struct {
 	Otmcode    string
 	Species_id int
 	Region     string
 	Diameters  []float64
-}
-
-type Scenario struct {
-	Total map[string]float64
-	Years []map[string]float64
 }
 
 // Take an array of prospective trees where each tree contains
@@ -89,17 +79,28 @@ type Scenario struct {
 //     "aq_pm10_avoided": ...
 //   }
 // }
-func EcoScenarioPOST(cache *cache.Cache) func(*ScenarioPostData) (*Scenario, error) {
-	return func(data *ScenarioPostData) (*Scenario, error) {
+func EcoScenarioPOST(cache *cache.Cache) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		request.ParseForm()
+		data := request.PostForm
 		t := time.Now()
 
-		scenarioTrees := data.Scenario_trees
-		scenarioRegion := data.Region
-
-		instanceId, err := strconv.Atoi(data.Instance_id)
+		yearsLen, err := strconv.ParseInt(data["Years"][0], 10, 0)
 
 		if err != nil {
-			return nil, err
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		// TODO: this might not be right
+		scenarioTrees := data["Scenario_trees"]
+		scenarioRegion := data["Region"][0]
+
+		instanceId, err := strconv.Atoi(data["Instance_id"][0])
+
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		if len(scenarioRegion) == 0 {
@@ -108,7 +109,7 @@ func EcoScenarioPOST(cache *cache.Cache) func(*ScenarioPostData) (*Scenario, err
 				cache.RegionGeometry, instanceId)
 
 			if err != nil {
-				return nil, err
+				http.Error(writer, err.Error(), http.StatusBadRequest)
 			}
 
 			if len(regions) == 1 {
@@ -116,13 +117,20 @@ func EcoScenarioPOST(cache *cache.Cache) func(*ScenarioPostData) (*Scenario, err
 			}
 		}
 
-		yearTotals := make([][]float64, data.Years)
+		yearTotals := make([][]float64, yearsLen)
 		grandTotals := make([]float64, len(eco.Factors))
 		for i := range yearTotals {
 			yearTotals[i] = make([]float64, len(eco.Factors))
 		}
 
-		for _, tree := range scenarioTrees {
+		for _, treeJSON := range scenarioTrees {
+			var tree scenarioTree
+			err = json.Unmarshal([]byte(treeJSON), &tree)
+
+			if err != nil {
+				http.Error(writer, err.Error(), http.StatusBadRequest)
+				return
+			}
 			effectiveRegion := scenarioRegion
 			if len(tree.Region) != 0 {
 				effectiveRegion = tree.Region
@@ -130,13 +138,16 @@ func EcoScenarioPOST(cache *cache.Cache) func(*ScenarioPostData) (*Scenario, err
 
 			factorDataForRegion, found := cache.RegionData[effectiveRegion]
 			if !found {
-				return nil, errors.New("No data is available for the iTree region with code " + effectiveRegion)
+				err = errors.New("No data is available for the iTree region with code " + effectiveRegion)
+				http.Error(writer, err.Error(), http.StatusBadRequest)
+				return
 			}
 
 			itreecode, err := cache.GetITreeCode(tree.Otmcode,
 				tree.Species_id, effectiveRegion, instanceId)
 			if err != nil {
-				return nil, err
+				http.Error(writer, err.Error(), http.StatusBadRequest)
+				return
 			}
 
 			for i, diameter := range tree.Diameters {
@@ -160,12 +171,23 @@ func EcoScenarioPOST(cache *cache.Cache) func(*ScenarioPostData) (*Scenario, err
 		fmt.Println("                   ",
 			int64(time.Since(t)/time.Millisecond), "ms (total)")
 
-		years := make([]map[string]float64, data.Years)
+		years := make([]map[string]float64, yearsLen)
 		for i, a := range yearTotals {
 			years[i] = eco.FactorArrayToMap(a)
 		}
-		return &Scenario{
-			Total: eco.FactorArrayToMap(grandTotals),
-			Years: years}, nil
+
+		scenarioMap := map[string]interface{}{
+			"Total": eco.FactorArrayToMap(grandTotals),
+			"Years": years,
+		}
+		j, err := json.Marshal(scenarioMap)
+
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprint(writer, string(j))
+
 	}
 }
