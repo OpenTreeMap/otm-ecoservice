@@ -17,6 +17,14 @@ var (
 	configpath = flag.String("configpath", "./", "path to the configuration")
 )
 
+// TODO: pull out into a web/rest helper package
+func MuxLog(handler http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+    })
+}
+
 func main() {
 	flag.Parse()
 
@@ -44,8 +52,9 @@ func main() {
 
 	hostInfo := fmt.Sprintf("%v:%v", cfg.Server.Host, cfg.Server.Port)
 
+
 	log.Println("Server listening at ", hostInfo)
-	err = http.ListenAndServe(hostInfo, nil)
+	err = http.ListenAndServe(hostInfo, MuxLog(http.DefaultServeMux))
 
 	if err != nil {
 		log.Fatal(err)
