@@ -42,7 +42,10 @@ func main() {
 	http.HandleFunc("/eco_scenario.json", endpoints.EcoScenarioPOST)
 	http.HandleFunc("/invalidate_cache", endpoints.InvalidateCacheGET)
 
-	err = http.ListenAndServe(fmt.Sprintf("%v:%v", cfg.Server.Host, cfg.Server.Port), nil)
+	hostInfo := fmt.Sprintf("%v:%v", cfg.Server.Host, cfg.Server.Port)
+
+	log.Println("Server listening at ", hostInfo)
+	err = http.ListenAndServe(hostInfo, nil)
 
 	if err != nil {
 		log.Fatal(err)
