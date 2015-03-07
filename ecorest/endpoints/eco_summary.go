@@ -12,6 +12,12 @@ import (
 
 func EcoSummaryPOST(cache *cache.Cache) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+
+		if request.Method != "POST" {
+			http.Error(writer, "", http.StatusMethodNotAllowed)
+			return
+		}
+
 		request.ParseForm()
 		query := request.PostForm["Query"][0]
 		region := request.PostForm["Region"][0]

@@ -42,6 +42,12 @@ func getSingleIntValue(in url.Values, key string) (int, error) {
 
 func EcoGET(cache *cache.Cache) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+
+		if request.Method != "GET" && request.Method != "" {
+			http.Error(writer, "", http.StatusMethodNotAllowed)
+			return
+		}
+
 		request.ParseForm()
 		instanceid, err := getSingleIntValue(request.Form, "instanceid")
 

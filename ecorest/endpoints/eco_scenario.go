@@ -81,6 +81,12 @@ type scenarioTree struct {
 // }
 func EcoScenarioPOST(cache *cache.Cache) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
+
+		if request.Method != "POST" {
+			http.Error(writer, "", http.StatusMethodNotAllowed)
+			return
+		}
+
 		request.ParseForm()
 		data := request.PostForm
 		t := time.Now()
