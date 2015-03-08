@@ -3,6 +3,7 @@ package cache
 import (
 	"errors"
 	"fmt"
+	"log"
 	"github.com/azavea/ecobenefits/eco"
 	"github.com/azavea/ecobenefits/ecorest/config"
 )
@@ -45,7 +46,10 @@ func Init(cfg config.Config) (*Cache, func()) {
 		speciesdata, err := eco.LoadSpeciesMap(cfg.Data.Path + "/species.json")
 		config.PanicOnError(err)
 		overrides, err := db.GetOverrideMap()
-		config.PanicOnError(err)
+
+		if err != nil {
+			log.Fatal(err)
+		}
 
 		regiongeometry, err := db.GetRegionGeoms()
 		config.PanicOnError(err)
