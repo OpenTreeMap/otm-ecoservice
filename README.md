@@ -164,3 +164,8 @@ $ curl "localhost:13000/eco.json?otmcode=FICA&diameter=20&region=InlEmpCLM"
   }
 }
 ```
+
+### Terminology
+
+#### Factors
+What i-Tree calls 'benefit categories', we refer to as 'factors' in our source. These are distinct ways in which environmental influence can be quantified for trees. Examples include 'CO2 avoided' and 'electricity (saved)'.
