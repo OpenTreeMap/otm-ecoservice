@@ -1,12 +1,8 @@
 package eco
 
 import (
-	"bufio"
 	"encoding/json"
-	"io"
 	"io/ioutil"
-	"os"
-	"strconv"
 	"strings"
 )
 
@@ -33,15 +29,6 @@ type Datafile struct {
 	// of diameter values that all receive the same ecobenefit value.
 	Breaks []float64
 	Values map[string][]float64
-}
-
-func indexOf(value string, l []string) int {
-	for p, v := range l {
-		if v == value {
-			return p
-		}
-	}
-	return -1
 }
 
 // Load the master species map
@@ -81,100 +68,37 @@ func LoadSpeciesMap(speciesMasterList string) (map[string]map[string]string, err
 // hydro_data = files['NoCalXXX'][3]
 //
 func LoadFiles(basePath string) map[string][]*Datafile {
+	prefix := "output"
+	extension := ".json"
 	m := make(map[string][]*Datafile)
 
 	files, _ := ioutil.ReadDir(basePath)
 	for _, f := range files {
 		// We only care about "output" files that have
 		// been generated from itree streets
-		if strings.Contains(f.Name(), "output") {
-			parts := strings.Split(f.Name(), "__")
+		if strings.Contains(f.Name(), prefix) {
+			name := f.Name()[0 : len(f.Name())-len(extension)]
+			parts := strings.Split(name, "__")
 			region := parts[1]
-			factor_with_csv := parts[2]
-			// strip .csv
-			factor := factor_with_csv[0 : len(factor_with_csv)-4]
+			factor := parts[2]
 
-			fidx := indexOf(factor, Factors)
+			for fidx, fcat := range Factors {
+				if fcat == factor {
+					if m[region] == nil {
+						m[region] = make([]*Datafile, len(Factors))
+					}
+					jdata, _ := ioutil.ReadFile(basePath + f.Name())
 
-			if fidx >= 0 {
-				if m[region] == nil {
-					m[region] = make([]*Datafile, len(Factors))
+					var val Datafile
+					json.Unmarshal(jdata, &val)
+
+					m[region][fidx] = &val
+					break
 				}
-
-				m[region][fidx] = LoadFile(basePath + f.Name())
 			}
 		}
 	}
-
 	return m
-}
-
-// TODO - Parse these all out to json
-// The data files are in shambles due to the xls exporter
-// we should clean these up once and for all
-func LoadFile(path string) *Datafile {
-	fi, err := os.Open(path)
-	if err != nil {
-		panic(err)
-	}
-
-	// close fi on exit and check for its returned error
-	defer func() {
-		if err := fi.Close(); err != nil {
-			panic(err)
-		}
-	}()
-
-	// Scanner used to read line by line
-	scanner := bufio.NewReader(fi)
-	str, _ := scanner.ReadString(0x0A)
-
-	str = strings.TrimSpace(str)
-	headerFields := strings.Split(str, ",")[1:]
-	breaks := make([]float64, 0, len(headerFields))
-
-	// The first line is always the list of
-	// diameter breaks
-	for _, l := range headerFields {
-		if len(l) > 0 {
-			n, _ := strconv.ParseFloat(l, 64)
-			breaks = append(breaks, n)
-		}
-	}
-
-	tgtLen := len(breaks)
-
-	// This maps from itree code to the
-	// list of values at
-	m := make(map[string][]float64)
-
-	for {
-		str, err := scanner.ReadString(0x0A)
-
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			panic(err)
-		}
-
-		line := strings.Split(strings.TrimSpace(str), ",")
-
-		if len(line) >= tgtLen {
-			code := line[0]
-			breaks := make([]float64, 0, len(breaks))
-
-			for _, l := range line[1 : tgtLen+1] {
-				n, _ := strconv.ParseFloat(l, 64)
-				breaks = append(breaks, n)
-			}
-
-			m[code] = breaks
-		}
-	}
-
-	file := &Datafile{breaks, m}
-
-	return file
 }
 
 func GetITreeCodesByRegion(regionData map[string][]*Datafile) map[string][]string {
