@@ -20,8 +20,17 @@ var (
 		"aq_sox_dep", "aq_sox_avoided", "aq_voc_avoided", "bvoc"}
 )
 
-// A datafile a particular set of dbh breaks and data points
+// A datafile contains a particular set of dbh breaks and data points
+// For example, the datafile:
+// Datafile{[12, 15, 17, 200], [5, 10, 15, 20]}
+// would imply that diameter values of 0-12 have a benefit value
+// of 5, 12-15 have a benefit of 10 value of 10, and so on.
+//
+// TODO: clarify whether breaks are inclusive/exclusive and at
+// which ends of the range.
 type Datafile struct {
+	// Breaks are values that form the endpoints of a range
+	// of diameter values that all receive the same ecobenefit value.
 	Breaks []float64
 	Values map[string][]float64
 }
@@ -54,14 +63,21 @@ func LoadSpeciesMap(speciesMasterList string) (map[string]map[string]string, err
 
 // Load the data files
 //
-// The returned data stucture maps is a map of
-// regions to an array indexed by factor id
+// the relevant data files are stored in the format:
+// output__<regioncode>__<factor_with_csv??>.csv
+//
+// for example:
+// output__TropicPacXXX__property_value.csv
+//
+// The returned data stucture has region codes as keys and an array of data files
+// as values.
+// the data file array is indexed by factor id, as determined by the global `Factors`.
 //
 // For instance, Factors[3] = hydro_interception so
 // the datafile for NoCalXXX region and hydro interception
 // would be:
 //
-// files = LoadFiles()
+// files = LoadFiles('/path/to/data/folder')
 // hydro_data = files['NoCalXXX'][3]
 //
 func LoadFiles(basePath string) map[string][]*Datafile {
