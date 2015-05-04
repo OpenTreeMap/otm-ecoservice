@@ -1,17 +1,23 @@
 package endpoints
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/azavea/ecobenefits/eco"
 	"github.com/azavea/ecobenefits/ecorest/cache"
+	"net/http"
 )
 
-type ITreeCodes struct {
-	Codes map[string][]string
-}
+func ITreeCodesGET(cache *cache.Cache) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
 
-func ITreeCodesGET(cache *cache.Cache) func() *ITreeCodes {
-	return func() *ITreeCodes {
+		if request.Method != "GET" && request.Method != "" {
+			http.Error(writer, "", http.StatusMethodNotAllowed)
+			return
+		}
+
 		codes := eco.GetITreeCodesByRegion(cache.RegionData)
-		return &ITreeCodes{Codes: codes}
+		j, _ := json.Marshal(map[string]map[string][]string{"Codes": codes})
+		fmt.Fprint(writer, string(j))
 	}
 }

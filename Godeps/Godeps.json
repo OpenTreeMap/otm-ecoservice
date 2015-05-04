@@ -9,10 +9,6 @@
 		{
 			"ImportPath": "github.com/lib/pq",
 			"Rev": "3c5c5bd6383b42aec97b5aa39fba2cddd35aea36"
-		},
-		{
-			"ImportPath": "github.com/ungerik/go-rest",
-			"Rev": "c3ee1de9e2197fe2812b818f25d2fc59fab9a13e"
 		}
 	]
 }

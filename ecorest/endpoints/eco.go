@@ -1,19 +1,15 @@
 package endpoints
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/azavea/ecobenefits/eco"
 	"github.com/azavea/ecobenefits/ecorest/cache"
+	"net/http"
 	"net/url"
 	"strconv"
 )
-
-// We can't marshall maps directly with
-// go-rest so we just wrap it here
-type BenefitsWrapper struct {
-	Benefits map[string]float64
-}
 
 // Given a values list return the single value
 // associated with a given key or an error
@@ -44,55 +40,70 @@ func getSingleIntValue(in url.Values, key string) (int, error) {
 	return intv, nil
 }
 
-func EcoGET(cache *cache.Cache) func(url.Values) (*BenefitsWrapper, error) {
-	return func(in url.Values) (*BenefitsWrapper, error) {
-		instanceid, err := getSingleIntValue(in, "instanceid")
+func EcoGET(cache *cache.Cache) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
 
-		if err != nil {
-			return nil, err
+		if request.Method != "GET" && request.Method != "" {
+			http.Error(writer, "", http.StatusMethodNotAllowed)
+			return
 		}
 
-		speciesid, err := getSingleIntValue(in, "speciesid")
+		request.ParseForm()
+		instanceid, err := getSingleIntValue(request.Form, "instanceid")
 
 		if err != nil {
-			return nil, err
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
 		}
 
-		otmcode, err := getSingleValue(in, "otmcode")
+		speciesid, err := getSingleIntValue(request.Form, "speciesid")
 
 		if err != nil {
-			return nil, err
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
 		}
 
-		diameterstr, err := getSingleValue(in, "diameter")
+		otmcode, err := getSingleValue(request.Form, "otmcode")
 
 		if err != nil {
-			return nil, err
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		diameterstr, err := getSingleValue(request.Form, "diameter")
+
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		diameter, err := strconv.ParseFloat(diameterstr, 64)
 
 		if err != nil {
-			return nil, err
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		diameter = diameter * eco.CentimetersPerInch
 
-		region, err := getSingleValue(in, "region")
+		region, err := getSingleValue(request.Form, "region")
 
 		if err != nil {
-			return nil, err
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		factorDataForRegion, found := cache.RegionData[region]
 
 		if !found {
-			return nil, errors.New("invalid region")
+			http.Error(writer, errors.New("invalid region").Error(),
+				http.StatusBadRequest)
+			return
 		}
-
 		itreecode, err := cache.GetITreeCode(otmcode, speciesid, region, instanceid)
 		if err != nil {
-			return nil, err
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		factorsum := make([]float64, len(eco.Factors))
@@ -103,6 +114,15 @@ func EcoGET(cache *cache.Cache) func(url.Values) (*BenefitsWrapper, error) {
 			diameter,
 			factorsum)
 
-		return &BenefitsWrapper{Benefits: eco.FactorArrayToMap(factorsum)}, nil
+		benefits := eco.FactorArrayToMap(factorsum)
+		benefitsMap := map[string]map[string]float64{"Benefits": benefits}
+		j, err := json.Marshal(benefitsMap)
+
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprint(writer, string(j))
 	}
 }

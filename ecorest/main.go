@@ -4,24 +4,28 @@ import (
 	"github.com/azavea/ecobenefits/ecorest/cache"
 	"github.com/azavea/ecobenefits/ecorest/config"
 	"github.com/azavea/ecobenefits/ecorest/endpoints"
-	"net/url"
+	"net/http"
 )
 
 type restManager struct {
-	ITreeCodesGET      (func() *endpoints.ITreeCodes)
-	EcoGET             (func(url.Values) (*endpoints.BenefitsWrapper, error))
-	EcoSummaryPOST     (func(*endpoints.SummaryPostData) (*endpoints.BenefitsWrapper, error))
-	EcoScenarioPOST    (func(*endpoints.ScenarioPostData) (*endpoints.Scenario, error))
-	InvalidateCacheGET (func())
+	ITreeCodesGET      http.HandlerFunc
+	EcoGET             http.HandlerFunc
+	EcoSummaryPOST     http.HandlerFunc
+	EcoScenarioPOST    http.HandlerFunc
+	InvalidateCacheGET http.HandlerFunc
 }
 
 func GetManager(cfg config.Config) *restManager {
 	ecoCache, invalidateCache := cache.Init(cfg)
 	invalidateCache()
 
+	invalidateCacheGET := func(_ http.ResponseWriter, _ *http.Request) {
+		invalidateCache()
+	}
+
 	return &restManager{endpoints.ITreeCodesGET(ecoCache),
 		endpoints.EcoGET(ecoCache),
 		endpoints.EcoSummaryPOST(ecoCache),
 		endpoints.EcoScenarioPOST(ecoCache),
-		invalidateCache}
+		invalidateCacheGET}
 }

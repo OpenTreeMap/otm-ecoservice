@@ -15,7 +15,6 @@ type Config struct {
 	}
 }
 
-
 func PanicOnError(err error) {
 	if err != nil {
 		panic(err)

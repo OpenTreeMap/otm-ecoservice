@@ -1,28 +1,32 @@
 package endpoints
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/azavea/ecobenefits/eco"
 	"github.com/azavea/ecobenefits/ecorest/cache"
+	"net/http"
 	"strconv"
 	"time"
 )
 
-type SummaryPostData struct {
-	Region      string
-	Query       string
-	Instance_id string
-}
+func EcoSummaryPOST(cache *cache.Cache) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
 
-func EcoSummaryPOST(cache *cache.Cache) func(*SummaryPostData) (*BenefitsWrapper, error) {
-	return func(data *SummaryPostData) (*BenefitsWrapper, error) {
-		query := data.Query
-		region := data.Region
+		if request.Method != "POST" {
+			http.Error(writer, "", http.StatusMethodNotAllowed)
+			return
+		}
 
-		instanceid, err := strconv.Atoi(data.Instance_id)
+		request.ParseForm()
+		query := request.PostForm["Query"][0]
+		region := request.PostForm["Region"][0]
+
+		instanceid, err := strconv.Atoi(request.PostForm["Instance_id"][0])
 
 		if err != nil {
-			return nil, err
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		now := time.Now()
@@ -37,7 +41,8 @@ func EcoSummaryPOST(cache *cache.Cache) func(*SummaryPostData) (*BenefitsWrapper
 				cache.RegionGeometry, instanceid)
 
 			if err != nil {
-				return nil, err
+				http.Error(writer, err.Error(), http.StatusBadRequest)
+				return
 			}
 
 			if len(regions) == 1 {
@@ -54,7 +59,8 @@ func EcoSummaryPOST(cache *cache.Cache) func(*SummaryPostData) (*BenefitsWrapper
 		fmt.Println(int64(s/time.Millisecond), "ms (query)")
 
 		if err != nil {
-			return nil, err
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
 		}
 
 		factorsums, err :=
@@ -66,9 +72,18 @@ func EcoSummaryPOST(cache *cache.Cache) func(*SummaryPostData) (*BenefitsWrapper
 		fmt.Println(int64(s/time.Millisecond), "ms (total)")
 
 		if err != nil {
-			return nil, err
+			http.Error(writer, err.Error(), http.StatusBadRequest)
+			return
 		}
 
-		return &BenefitsWrapper{Benefits: factorsums}, nil
+		benefitsMap := map[string]map[string]float64{"Benefits": factorsums}
+		j, err := json.Marshal(benefitsMap)
+
+		if err != nil {
+			http.Error(writer, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprint(writer, string(j))
 	}
 }

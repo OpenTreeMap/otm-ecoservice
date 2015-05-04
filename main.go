@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"github.com/azavea/ecobenefits/ecorest"
 	"github.com/azavea/ecobenefits/ecorest/config"
-	"github.com/ungerik/go-rest"
 	"log"
+	"net/http"
 	"os"
 	"runtime/pprof"
 )
@@ -16,6 +16,14 @@ var (
 	cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 	configpath = flag.String("configpath", "./", "path to the configuration")
 )
+
+// TODO: pull out into a web/rest helper package
+func MuxLog(handler http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        log.Printf("%s %s %s", r.RemoteAddr, r.Method, r.URL)
+		handler.ServeHTTP(w, r)
+    })
+}
 
 func main() {
 	flag.Parse()
@@ -36,11 +44,19 @@ func main() {
 
 	endpoints := ecorest.GetManager(cfg)
 
-	rest.HandleGET("/itree_codes.json", endpoints.ITreeCodesGET)
-	rest.HandleGET("/eco.json", endpoints.EcoGET)
-	rest.HandlePOST("/eco_summary.json", endpoints.EcoSummaryPOST)
-	rest.HandlePOST("/eco_scenario.json", endpoints.EcoScenarioPOST)
-	rest.HandleGET("/invalidate_cache", endpoints.InvalidateCacheGET)
+	http.HandleFunc("/itree_codes.json", endpoints.ITreeCodesGET)
+	http.HandleFunc("/eco.json", endpoints.EcoGET)
+	http.HandleFunc("/eco_summary.json", endpoints.EcoSummaryPOST)
+	http.HandleFunc("/eco_scenario.json", endpoints.EcoScenarioPOST)
+	http.HandleFunc("/invalidate_cache", endpoints.InvalidateCacheGET)
 
-	rest.RunServer(fmt.Sprintf("%v:%v", cfg.Server.Host, cfg.Server.Port), nil)
+	hostInfo := fmt.Sprintf("%v:%v", cfg.Server.Host, cfg.Server.Port)
+
+
+	log.Println("Server listening at ", hostInfo)
+	err = http.ListenAndServe(hostInfo, MuxLog(http.DefaultServeMux))
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }
