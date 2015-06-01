@@ -1,9 +1,9 @@
 package ecorest
 
 import (
-	"github.com/azavea/ecobenefits/ecorest/cache"
-	"github.com/azavea/ecobenefits/ecorest/config"
-	"github.com/azavea/ecobenefits/ecorest/endpoints"
+	"github.com/OpenTreeMap/ecoservice/ecorest/cache"
+	"github.com/OpenTreeMap/ecoservice/ecorest/config"
+	"github.com/OpenTreeMap/ecoservice/ecorest/endpoints"
 	"net/url"
 )
 

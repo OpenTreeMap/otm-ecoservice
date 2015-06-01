@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/azavea/ecobenefits/eco"
+	"github.com/OpenTreeMap/ecoservice/eco"
 )
 
 type Config struct {

@@ -18,8 +18,8 @@ You will see some Ansible output after the machine boots up. After that, SSH int
 
 ```bash
 $ vagrant ssh
-vagrant@otm-ecoservice:~$ cd src/github.com/azavea/ecobenefits/
-vagrant@otm-ecoservice:~/src/github.com/azavea/ecobenefits$ make test
+vagrant@otm-ecoservice:~$ cd src/github.com/OpenTreeMap/ecoservice/
+vagrant@otm-ecoservice:~/src/github.com/OpenTreeMap/ecoservice$ make test
 godep go test eco/*
 ok      command-line-arguments  0.494s
 ```
@@ -27,8 +27,8 @@ ok      command-line-arguments  0.494s
 If you want to build a release, use the `release` target:
 
 ```bash
-vagrant@otm-ecoservice:~/src/github.com/azavea/ecobenefits$ make release
-vagrant@otm-ecoservice:~/src/github.com/azavea/ecobenefits$ exit
+vagrant@otm-ecoservice:~/src/github.com/OpenTreeMap/ecoservice$ make release
+vagrant@otm-ecoservice:~/src/github.com/OpenTreeMap/ecoservice$ exit
 $ ls -l *.tar.gz
 -rw-r--r--  1 hcastro  staff  2714304 Sep  9 15:41 ecoservice.tar.gz
 ```
@@ -69,7 +69,7 @@ Calculations then are determined by linear interpolation
 from the root resource sheets.
 
 For the electricity case we use this csv:
-https://github.com/azavea/ecobenefits/blob/master/data/output__InlEmpCLM__electricity.csv
+https://github.com/OpenTreeMap/ecoservice/blob/master/data/output__InlEmpCLM__electricity.csv
 
 The diameter ranges are in centimeters so we convert 20 in into 50.8
 cm. Using those data we find the following range:
@@ -82,7 +82,7 @@ BDS OTHER  189.2   189.2
 In this case we're interpolating over a horizontal line so we get 189.2 kwh.
 
 Doing the same for natural gas:
-https://github.com/azavea/ecobenefits/blob/master/data/output__InlEmpCLM__natural_gas.csv
+https://github.com/OpenTreeMap/ecoservice/blob/master/data/output__InlEmpCLM__natural_gas.csv
 
 ```
             38.10   53.34
@@ -93,7 +93,7 @@ So the natural gas savings is computed to be -81.4 kbtus. That ends up
 as -0.814 therms or -23.86 kwh
 
 Continuing with stormwater:
-https://github.com/azavea/ecobenefits/blob/master/data/output__InlEmpCLM__hydro_interception.csv
+https://github.com/OpenTreeMap/ecoservice/blob/master/data/output__InlEmpCLM__hydro_interception.csv
 
 ```
             38.10   53.34
@@ -103,7 +103,7 @@ BDS OTHER    3.16    3.16
 So we get 3.16 m^3 of water, which converts to 842 gal
 
 Carbon calculations can be performed in the same manner. For storage:
-https://github.com/azavea/ecobenefits/blob/master/data/output__InlEmpCLM__co2_storage.csv
+https://github.com/OpenTreeMap/ecoservice/blob/master/data/output__InlEmpCLM__co2_storage.csv
 
 ```
             38.10   53.34
@@ -113,7 +113,7 @@ BDS OTHER  569.6   569.6
 569.6 kgs of CO2 stored converts to 1315 lbs.
 
 CO2 avoided:
-https://github.com/azavea/ecobenefits/blob/master/data/output__InlEmpCLM__co2_avoided.csv
+https://github.com/OpenTreeMap/ecoservice/blob/master/data/output__InlEmpCLM__co2_avoided.csv
 
 ```
             38.10   53.34
@@ -123,7 +123,7 @@ BDS OTHER   55.7    55.7
 55.7 kgs of CO2 avoided converts to 122.8 lbs
 
 CO2 sequestered:
-https://github.com/azavea/ecobenefits/blob/master/data/output__InlEmpCLM__co2_sequestered.csv
+https://github.com/OpenTreeMap/ecoservice/blob/master/data/output__InlEmpCLM__co2_sequestered.csv
 
 ```
             38.10   53.34
