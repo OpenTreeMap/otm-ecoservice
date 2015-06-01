@@ -1,4 +1,4 @@
-# ecoservice [![Build Status](https://travis-ci.org/OpenTreeMap/ecobenefits.svg?branch=master)](https://travis-ci.org/OpenTreeMap/ecobenefits)
+# ecoservice [![Build Status](https://travis-ci.org/OpenTreeMap/otm-ecoservice.svg?branch=master)](https://travis-ci.org/OpenTreeMap/otm-ecoservice)
 
 REST services for calculating eco benefits for trees in an [OpenTreeMap](https://github.com/OpenTreeMap) database.
 
