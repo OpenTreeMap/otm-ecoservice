@@ -1,8 +1,8 @@
 package endpoints
 
 import (
-	"github.com/azavea/ecobenefits/eco"
-	"github.com/azavea/ecobenefits/ecorest/cache"
+	"github.com/OpenTreeMap/ecoservice/eco"
+	"github.com/OpenTreeMap/ecoservice/ecorest/cache"
 )
 
 type ITreeCodes struct {
