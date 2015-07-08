@@ -1,9 +1,9 @@
 package ecorest
 
 import (
-	"github.com/OpenTreeMap/ecoservice/ecorest/cache"
-	"github.com/OpenTreeMap/ecoservice/ecorest/config"
-	"github.com/OpenTreeMap/ecoservice/ecorest/endpoints"
+	"github.com/OpenTreeMap/otm-ecoservice/ecorest/cache"
+	"github.com/OpenTreeMap/otm-ecoservice/ecorest/config"
+	"github.com/OpenTreeMap/otm-ecoservice/ecorest/endpoints"
 	"net/url"
 )
 

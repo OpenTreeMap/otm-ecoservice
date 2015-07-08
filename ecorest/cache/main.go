@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"github.com/OpenTreeMap/ecoservice/eco"
-	"github.com/OpenTreeMap/ecoservice/ecorest/config"
+	"github.com/OpenTreeMap/otm-ecoservice/eco"
+	"github.com/OpenTreeMap/otm-ecoservice/ecorest/config"
 )
 
 type speciesDataMap map[string]map[string]string

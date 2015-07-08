@@ -48,7 +48,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   # Mapping the local source code directory into the GOPATH inside the VM. Also, using azavea.com
-  config.vm.synced_folder ".", "/home/vagrant/src/github.com/OpenTreeMap/ecoservice"
+  config.vm.synced_folder ".", "/home/vagrant/src/github.com/OpenTreeMap/otm-ecoservice"
 
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "ansible/site.yml"

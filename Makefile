@@ -5,13 +5,13 @@ test:
 
 clean:
 	rm -rf ecoservice/ \
-		   Godeps/_workspace/src/github.com/OpenTreeMap/ecoservice/ \
+		   Godeps/_workspace/src/github.com/OpenTreeMap/otm-ecoservice/ \
 		   ecoservice.tar.gz
 
 build: clean
-	mkdir -p Godeps/_workspace/src/github.com/OpenTreeMap/ecoservice/
-	cp -r eco/ Godeps/_workspace/src/github.com/OpenTreeMap/ecoservice/
-	cp -r ecorest/ Godeps/_workspace/src/github.com/OpenTreeMap/ecoservice/
+	mkdir -p Godeps/_workspace/src/github.com/OpenTreeMap/otm-ecoservice/
+	cp -r eco/ Godeps/_workspace/src/github.com/OpenTreeMap/otm-ecoservice/
+	cp -r ecorest/ Godeps/_workspace/src/github.com/OpenTreeMap/otm-ecoservice/
 	mkdir ecoservice
 	godep go build -o ecoservice/ecobenefits
 
