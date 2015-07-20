@@ -3,8 +3,8 @@ package endpoints
 import (
 	"errors"
 	"fmt"
-	"github.com/OpenTreeMap/ecoservice/eco"
-	"github.com/OpenTreeMap/ecoservice/ecorest/cache"
+	"github.com/OpenTreeMap/otm-ecoservice/eco"
+	"github.com/OpenTreeMap/otm-ecoservice/ecorest/cache"
 	"net/url"
 	"strconv"
 )

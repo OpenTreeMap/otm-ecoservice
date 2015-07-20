@@ -1,7 +1,7 @@
 package config
 
 import (
-	"github.com/OpenTreeMap/ecoservice/eco"
+	"github.com/OpenTreeMap/otm-ecoservice/eco"
 )
 
 type Config struct {
