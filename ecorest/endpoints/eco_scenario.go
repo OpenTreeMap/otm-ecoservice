@@ -147,7 +147,7 @@ func EcoScenarioPOST(cache *cache.Cache) func(*ScenarioPostData) (*Scenario, err
 					diameter,
 					factorSum)
 				for j, value := range factorSum {
-					yearTotals[i][j] = value
+					yearTotals[i][j] += value
 					grandTotals[j] += value
 				}
 			}
