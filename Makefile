@@ -17,5 +17,4 @@ build: clean
 
 release: build
 	cp -r data/ ecoservice/data/
-	cp config.gcfg.template ecoservice/
 	tar czf ecoservice.tar.gz ecoservice/
