@@ -90,9 +90,19 @@ func CalcBenefitSummaryWithData(
 	region string,
 	speciesdata map[string]map[string]string,
 	regiondata map[string][]*Datafile,
-	overrides map[string]map[int]string) (map[string]float64, error) {
+	overrides map[string]map[int]string) (map[string]map[string]float64, error) {
 
-	return calcBenefitsWithData(regions, rows, region, speciesdata, regiondata, overrides, nil)
+	outputData := make(map[string]map[string]float64)
+	data, err := calcBenefitsWithData(regions, rows, region, speciesdata, regiondata, overrides, nil)
+
+	if err != nil {
+		return nil, err
+	}
+
+	outputData["summary"] = data
+
+	return outputData, nil
+
 }
 
 // CalcFullBenefitsWithData performs the same operation as CalcSummaryBenefitsWithData
