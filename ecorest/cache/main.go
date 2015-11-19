@@ -3,9 +3,9 @@ package cache
 import (
 	"errors"
 	"fmt"
-	"log"
 	"github.com/OpenTreeMap/otm-ecoservice/eco"
 	"github.com/OpenTreeMap/otm-ecoservice/ecorest/config"
+	"log"
 )
 
 type speciesDataMap map[string]map[string]string
@@ -42,8 +42,8 @@ func Init(cfg config.Config) (*Cache, func()) {
 
 		eco.InitGeos()
 
-		regiondata := eco.LoadFiles(cfg.Data.Path)
-		speciesdata, err := eco.LoadSpeciesMap(cfg.Data.Path + "/species.json")
+		regiondata := eco.LoadFiles(cfg.DataPath)
+		speciesdata, err := eco.LoadSpeciesMap(cfg.DataPath + "/species.json")
 		config.PanicOnError(err)
 		overrides, err := db.GetOverrideMap()
 

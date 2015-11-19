@@ -1,7 +1,6 @@
 package main
 
 import (
-	"code.google.com/p/gcfg"
 	"flag"
 	"fmt"
 	"github.com/OpenTreeMap/otm-ecoservice/ecorest"
@@ -14,7 +13,6 @@ import (
 
 var (
 	cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-	configpath = flag.String("configpath", "./", "path to the configuration")
 )
 
 func main() {
@@ -29,10 +27,7 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	var cfg config.Config
-
-	err := gcfg.ReadFileInto(&cfg, *configpath)
-	config.PanicOnError(err)
+	cfg := config.LoadConfig()
 
 	endpoints := ecorest.GetManager(cfg)
 
@@ -42,5 +37,5 @@ func main() {
 	rest.HandlePOST("/eco_scenario.json", endpoints.EcoScenarioPOST)
 	rest.HandleGET("/invalidate_cache", endpoints.InvalidateCacheGET)
 
-	rest.RunServer(fmt.Sprintf("%v:%v", cfg.Server.Host, cfg.Server.Port), nil)
+	rest.RunServer(fmt.Sprintf("%v:%v", cfg.ServerHost, cfg.ServerPort), nil)
 }

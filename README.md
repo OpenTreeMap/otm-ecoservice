@@ -35,20 +35,21 @@ $ ls -l *.tar.gz
 
 ## Running the ``ecoservice``
 
-The ``ecobenefits`` executable must be run with a configuration file
-containing three sections:
+The ``ecobenefits`` executable must be run with certain environment variables set:
 
-* ``database`` - PostgreSQL database connection information
-* ``server`` - The host address and port on which the service will listen
-* ``data`` - The absolute path to the data directory (with a trailing
-  slash)
+```
+OTM_DB_USER = 'otm'
+OTM_DB_PASSWORD = 'otm'
+OTM_DB_NAME = 'otm'
+OTM_DB_HOST = 'localhost'
+OTM_ECO_DATA_DIR = Absolute path to the data directory (with a trailing slash)
+OTM_SERVER_PORT = '13000'
+```
 
-A template of this config file is provided in ``config.gcfg.template``.
-
-Once a config file has been created, the ``ecobenefits`` service can be launched with:
+Once environment variables have been set, the ``ecobenefits`` service can be launched with:
 
 ```bash
-$ /path/to/ecobenefits --configpath=/path/to/config.gcfg
+$ /path/to/ecobenefits
 ```
 
 ## Example Calculation
