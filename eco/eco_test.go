@@ -196,7 +196,7 @@ func generateSpeciesListFromRegion(
 		x, y := GetXYOnSurface(region.geom)
 		otmcode := possibleSpecies[sidx%len(possibleSpecies)]
 		diameter := rand.Float64() * 100.0
-		data[i] = &TestRecord{otmcode, diameter, x, y, sidx}
+		data[i] = &TestRecord{i, otmcode, diameter, x, y, sidx}
 		i++
 	}
 
@@ -268,7 +268,7 @@ func benchmarkTreesMultiRegionWithOverrides(
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		testingContext.Reset()
-		data, err := CalcBenefitsWithData(
+		data, err := CalcBenefitSummaryWithData(
 			regions, testingContext, region, speciesdata,
 			l, overrides)
 

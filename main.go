@@ -34,6 +34,7 @@ func main() {
 	rest.HandleGET("/itree_codes.json", endpoints.ITreeCodesGET)
 	rest.HandleGET("/eco.json", endpoints.EcoGET)
 	rest.HandlePOST("/eco_summary.json", endpoints.EcoSummaryPOST)
+	rest.HandlePOST("/eco_full.json", endpoints.EcoFullBenefitsPOST)
 	rest.HandlePOST("/eco_scenario.json", endpoints.EcoScenarioPOST)
 	rest.HandleGET("/invalidate_cache", endpoints.InvalidateCacheGET)
 

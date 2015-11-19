@@ -8,14 +8,20 @@ import (
 	"time"
 )
 
-type SummaryPostData struct {
+type FullBenefitsPostData struct {
 	Region      string
 	Query       string
 	Instance_id string
 }
 
-func EcoSummaryPOST(cache *cache.Cache) func(*SummaryPostData) (*BenefitsWrapper, error) {
-	return func(data *SummaryPostData) (*BenefitsWrapper, error) {
+// We can't marshall maps directly with
+// go-rest so we just wrap it here
+type FullBenefitsWrapper struct {
+	Benefits map[string]map[string]float64
+}
+
+func EcoFullBenefitsPOST(cache *cache.Cache) func(*FullBenefitsPostData) (*FullBenefitsWrapper, error) {
+	return func(data *FullBenefitsPostData) (*FullBenefitsWrapper, error) {
 		query := data.Query
 		region := data.Region
 
@@ -57,8 +63,8 @@ func EcoSummaryPOST(cache *cache.Cache) func(*SummaryPostData) (*BenefitsWrapper
 			return nil, err
 		}
 
-		factorsums, err :=
-			eco.CalcBenefitSummaryWithData(
+		factorsmap, err :=
+			eco.CalcFullBenefitsWithData(
 				regions, rows, region,
 				cache.SpeciesData, cache.RegionData, instanceOverrides)
 
@@ -69,6 +75,6 @@ func EcoSummaryPOST(cache *cache.Cache) func(*SummaryPostData) (*BenefitsWrapper
 			return nil, err
 		}
 
-		return &BenefitsWrapper{Benefits: factorsums}, nil
+		return &FullBenefitsWrapper{Benefits: factorsmap}, nil
 	}
 }
