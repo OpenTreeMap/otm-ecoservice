@@ -97,7 +97,7 @@ func (dbc *DBContext) GetRegionsForInstance(
                           from treemap_instance
                              inner join treemap_instancebounds
                              on treemap_instancebounds.id =
-                             treemap_instance.bounds_obj_id
+                             treemap_instance.bounds_id
                              left join treemap_itreeregion
                              on st_intersects(
                                 treemap_itreeregion.geometry,
