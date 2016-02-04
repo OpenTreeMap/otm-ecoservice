@@ -95,10 +95,13 @@ func (dbc *DBContext) GetRegionsForInstance(
 	rows, err :=
 		db.Query(`select treemap_itreeregion.id
                           from treemap_instance
+                             inner join treemap_instancebounds
+                             on treemap_instancebounds.id =
+                             treemap_instance.bounds_obj_id
                              left join treemap_itreeregion
                              on st_intersects(
                                 treemap_itreeregion.geometry,
-                                treemap_instance.bounds)
+                                treemap_instancebounds.geom)
                           where
                              code is not null and
                           treemap_instance.id = $1`, instance)
