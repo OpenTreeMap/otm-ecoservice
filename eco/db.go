@@ -16,13 +16,14 @@ type DBInfo struct {
 type DBRow sql.Rows
 
 func (dbr *DBRow) GetDataWithRegion(
+	id *int,
 	diameter *float64,
 	otmcode *string,
 	speciesid *int,
 	x *float64,
 	y *float64) error {
 
-	err := (*sql.Rows)(dbr).Scan(diameter, speciesid, otmcode, x, y)
+	err := (*sql.Rows)(dbr).Scan(id, diameter, speciesid, otmcode, x, y)
 
 	if err == nil {
 		*diameter *= CentimetersPerInch
@@ -32,9 +33,9 @@ func (dbr *DBRow) GetDataWithRegion(
 }
 
 func (dbr *DBRow) GetDataWithoutRegion(
-	diameter *float64, otmcode *string, speciesid *int) error {
+	id *int, diameter *float64, otmcode *string, speciesid *int) error {
 
-	err := (*sql.Rows)(dbr).Scan(diameter, speciesid, otmcode)
+	err := (*sql.Rows)(dbr).Scan(id, diameter, speciesid, otmcode)
 
 	if err == nil {
 		*diameter *= CentimetersPerInch

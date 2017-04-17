@@ -1,5 +1,9 @@
 package eco
 
+import (
+	"strconv"
+)
+
 var CentimetersPerInch = 2.54
 
 // Data backends are used to fetch the actual tree
@@ -35,7 +39,7 @@ type Fetchable interface {
 	//
 	// The diameter will be in centimeters
 	GetDataWithRegion(
-		diameter *float64, otmcode *string,
+		id *int, diameter *float64, otmcode *string,
 		speciesid *int, x *float64, y *float64) error
 
 	// This method can be called on any fetchable object and
@@ -43,7 +47,7 @@ type Fetchable interface {
 	//
 	// The diameter will be in centimeters
 	GetDataWithoutRegion(
-		diameter *float64, otmcode *string, speciesid *int) error
+		id *int, diameter *float64, otmcode *string, speciesid *int) error
 
 	// Closes this fetchable
 	Close() error
@@ -80,7 +84,7 @@ type Fetchable interface {
 // Note that the ith element of the datafiles slice is
 // the ith factor from eco.Factors
 //
-func CalcBenefitsWithData(
+func CalcBenefitSummaryWithData(
 	regions []Region,
 	rows Fetchable,
 	region string,
@@ -88,10 +92,39 @@ func CalcBenefitsWithData(
 	regiondata map[string][]*Datafile,
 	overrides map[string]map[int]string) (map[string]float64, error) {
 
+	return calcBenefitsWithData(regions, rows, region, speciesdata, regiondata, overrides, nil)
+}
+
+// CalcFullBenefitsWithData performs the same operation as CalcSummaryBenefitsWithData
+// but returns data on a per-tree basis instead of summarized for every tree
+func CalcFullBenefitsWithData(
+	regions []Region,
+	rows Fetchable,
+	region string,
+	speciesdata map[string]map[string]string,
+	regiondata map[string][]*Datafile,
+	overrides map[string]map[int]string) (map[string]map[string]float64, error) {
+
+	outputData := make(map[string]map[string]float64)
+	_, err := calcBenefitsWithData(regions, rows, region, speciesdata, regiondata, overrides, outputData)
+
+	return outputData, err
+}
+
+func calcBenefitsWithData(
+	regions []Region,
+	rows Fetchable,
+	region string,
+	speciesdata map[string]map[string]string,
+	regiondata map[string][]*Datafile,
+	overrides map[string]map[int]string,
+	outputData map[string]map[string]float64) (map[string]float64, error) {
+
 	useFixedRegion := len(region) > 0
 	factorsum := make([]float64, len(Factors))
 	ntrees := 0
 
+	id := 0
 	diameter := 0.0
 	otmcode := ""
 	speciesid := 0
@@ -121,10 +154,10 @@ func CalcBenefitsWithData(
 	for rows.Next() {
 		if useFixedRegion {
 			err = rows.GetDataWithoutRegion(
-				&diameter, &otmcode, &speciesid)
+				&id, &diameter, &otmcode, &speciesid)
 		} else {
 			err = rows.GetDataWithRegion(
-				&diameter, &otmcode, &speciesid, &x, &y)
+				&id, &diameter, &otmcode, &speciesid, &x, &y)
 
 			region = ""
 
@@ -180,6 +213,11 @@ func CalcBenefitsWithData(
 				itreecode,
 				diameter,
 				factorsum)
+
+			if outputData != nil {
+				outputData[strconv.Itoa(id)] = FactorArrayToMap(factorsum)
+				factorsum = make([]float64, len(Factors))
+			}
 
 			ntrees += 1
 		}
