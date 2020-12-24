@@ -10,4 +10,6 @@ COPY . .
 ENV GOPATH=/usr/local/ecoservice
 
 RUN make build
-CMD ecoservice/ecobenefits
+WORKDIR /usr/local/ecoservice/ecoservice
+
+CMD ecobenefits
