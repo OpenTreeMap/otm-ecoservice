@@ -5,7 +5,7 @@ test:
 
 clean:
 	rm -rf ecoservice/ \
-		   Godeps/_workspace/src/github.com/OpenTreeMap/otm-ecoservice/ \
+		   src/github.com/OpenTreeMap/otm-ecoservice/ \
 		   ecoservice.tar.gz
 
 build: clean
